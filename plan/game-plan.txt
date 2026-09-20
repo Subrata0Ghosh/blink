@@ -1,0 +1,1807 @@
+Yes. Below is a **single master prompt** you can give to Cursor, Claude Code, Gemini, or another coding/design agent to build the app from zero.
+
+I’m keeping the visual quality at the level of polished mobile games, but the branding, characters, layouts, effects, and mechanics should be **original rather than copying Clash of Clans, Subway Surfers, or Candy Crush assets/designs**.
+
+# MASTER BUILD PROMPT — BLINK: THE WORLD CHANGES WHEN YOU LOOK AWAY
+
+You are an expert mobile-game designer, Flutter engineer, UI/UX designer, motion designer, sound designer, game-economy designer, and product engineer.
+
+Build a complete polished Android mobile game called:
+
+# BLINK
+
+### The World Changes When You Look Away.
+
+The game is a fast, visually beautiful cognitive challenge game where players must observe, remember, predict, detect changes, and discover hidden rules.
+
+The game must feel like a premium modern mobile game with:
+
+* smooth animations
+* satisfying interactions
+* polished transitions
+* original fantasy/sci-fi visual identity
+* gem-based rewards
+* particles
+* haptics
+* sound effects
+* progression
+* daily challenges
+* unlockable content
+* changing gameplay mechanics
+
+Do NOT copy copyrighted characters, artwork, icons, sounds, UI layouts, names, or assets from Clash of Clans, Subway Surfers, Candy Crush, or any other game.
+
+Use those games only as references for:
+
+* polish
+* responsiveness
+* game feel
+* reward feedback
+* animation quality
+* progression clarity
+* visual excitement
+
+Everything visual and gameplay-specific must be original.
+
+---
+
+# 1. CORE GAME IDEA
+
+The player sees a scene for a short time.
+
+The scene disappears or changes.
+
+The player must answer what happened.
+
+Examples:
+
+* What changed?
+* What disappeared?
+* Which object moved?
+* Which color changed?
+* Which two objects swapped places?
+* Which object was closest to another?
+* What happened first?
+* Where will this object move?
+* Which rule is being followed?
+* What is different from the previous scene?
+
+The game should never feel like one repetitive memory test.
+
+The challenge engine must continuously combine:
+
+* visual memory
+* spatial memory
+* color recognition
+* sequence memory
+* prediction
+* reaction
+* pattern recognition
+* attention
+* rule discovery
+* multi-tasking
+
+---
+
+# 2. MAIN GAME LOOP
+
+The fundamental loop is:
+
+OBSERVE
+↓
+THINK
+↓
+ANSWER
+↓
+FEEDBACK
+↓
+REWARD
+↓
+NEW CHALLENGE
+
+Each round should take approximately 5–20 seconds.
+
+The player should always understand:
+
+* what to do
+* how well they performed
+* what they earned
+* what becomes harder next
+
+Avoid unnecessary menus between rounds.
+
+---
+
+# 3. SIGNATURE FEATURE — CHANGING WORLD
+
+The main progression system is a living world called:
+
+# THE SHIFT WORLD
+
+The player starts with a mysterious floating island.
+
+Every successful challenge grows the world.
+
+World elements include:
+
+* floating islands
+* trees
+* crystals
+* bridges
+* towers
+* portals
+* observatories
+* glowing ruins
+* small creatures
+* energy cores
+
+Every major achievement visually changes the world.
+
+Example progression:
+
+LEVEL 1:
+Small floating island
+
+LEVEL 5:
+Tree appears
+
+LEVEL 10:
+Crystal garden appears
+
+LEVEL 20:
+Small tower appears
+
+LEVEL 30:
+Portal activates
+
+LEVEL 50:
+New region unlocked
+
+LEVEL 100:
+World transformation event
+
+This gives players a visual reason to return.
+
+---
+
+# 4. GAME MODES
+
+Create multiple gameplay modes.
+
+## MODE A — REMEMBER
+
+Show 4–20 objects.
+
+Hide them.
+
+Ask:
+“What was next to the blue crystal?”
+
+Difficulty increases over time.
+
+---
+
+## MODE B — CHANGE
+
+Show a scene.
+
+Hide it.
+
+Show a slightly modified version.
+
+Ask:
+“What changed?”
+
+Possible changes:
+
+* object removed
+* object added
+* color changed
+* object moved
+* rotation changed
+* size changed
+
+---
+
+## MODE C — SWAP
+
+Show several objects.
+
+Two secretly exchange positions.
+
+Player identifies them.
+
+---
+
+## MODE D — PREDICT
+
+Objects move according to a pattern.
+
+Player predicts:
+“Where will the red orb finish?”
+
+---
+
+## MODE E — SEQUENCE
+
+Show:
+
+BLUE → RED → GREEN → GOLD
+
+Ask:
+“What comes next?”
+
+---
+
+## MODE F — SPATIAL
+
+Ask:
+“Which object was closest to the portal?”
+
+Or:
+
+“Which object was above the green crystal?”
+
+---
+
+## MODE G — HIDDEN RULE
+
+Do not explicitly explain the rule.
+
+Show several examples.
+
+Player must discover the pattern.
+
+Example:
+
+Circle → Circle moves
+Triangle → Triangle changes color
+Square → Square disappears
+
+Player must infer the rule.
+
+---
+
+## MODE H — CHAOS
+
+Combine multiple mechanics.
+
+Example:
+
+* remember objects
+* one object moves
+* colors change
+* player has 5 seconds
+* one false clue appears
+
+This should be an advanced mode.
+
+---
+
+# 5. DAILY CHALLENGE
+
+Every day provide one unique challenge.
+
+Example:
+
+## DAILY SHIFT
+
+“You have 20 seconds to discover what changed.”
+
+All users receive the same daily challenge.
+
+Show:
+
+TODAY'S SCORE
+BEST SCORE
+GLOBAL POSITION
+
+Do not require payment to participate.
+
+---
+
+# 6. WEEKLY MYSTERY
+
+Every week create a special mystery challenge.
+
+Examples:
+
+“Something is wrong with the world.”
+
+“Find the invisible change.”
+
+“Discover the hidden rule.”
+
+“Only one object is lying.”
+
+Use cinematic presentation.
+
+The player should feel like solving a mystery, not completing a normal level.
+
+---
+
+# 7. PROCEDURAL CHALLENGE ENGINE
+
+Do not hard-code thousands of levels.
+
+Build a procedural challenge generator.
+
+The generator combines:
+
+OBJECTS
++
+POSITIONS
++
+COLORS
++
+SIZES
++
+MOVEMENT
++
+TIMING
++
+RULES
++
+DISTRACTIONS
++
+QUESTION TYPES
+
+Example:
+
+Object set:
+
+* orb
+* crystal
+* moon
+* cube
+* leaf
+
+Generate:
+
+* random positions
+* controlled difficulty
+* controlled visual similarity
+* hidden transformation
+
+Questions are generated from the actual scene.
+
+Ensure every generated question has exactly one logically correct answer.
+
+---
+
+# 8. DIFFICULTY SYSTEM
+
+Do NOT simply make objects smaller or time shorter.
+
+Difficulty should evolve through different dimensions.
+
+Level progression:
+
+LEVEL 1–5
+Simple memory
+
+LEVEL 6–15
+More objects
+
+LEVEL 16–30
+Movement
+
+LEVEL 31–50
+Similar-looking objects
+
+LEVEL 51–75
+Multiple simultaneous changes
+
+LEVEL 76–100
+Prediction
+
+LEVEL 100+
+Mixed mechanics
+
+ADVANCED:
+Hidden rules
+Multi-tasking
+Chaos mode
+
+The game should periodically introduce a completely new mechanic so the player doesn't feel stuck in repetition.
+
+---
+
+# 9. PLAYER PROGRESSION
+
+Create XP.
+
+Player earns XP for:
+
+* correct answer
+* perfect round
+* streak
+* daily challenge
+* mystery challenge
+* first attempt
+* difficult mode
+
+Use:
+
+XP
+LEVEL
+STREAK
+GEMS
+WORLD PROGRESS
+
+---
+
+# 10. GEM SYSTEM
+
+Create an original gem/crystal currency.
+
+Name:
+
+# SHIFT GEMS
+
+Visual:
+
+* small floating crystalline shard
+* faceted geometry
+* glowing center
+* particle trail
+
+Gem pickup animation:
+
+1. Gem appears
+2. Gem rotates
+3. Tiny sparkle burst
+4. Gem flies toward currency counter
+5. Counter increases with bounce animation
+6. Short satisfying sound
+7. Haptic tap
+
+Use different gem quantities:
++5
++10
++25
++50
++100
+
+Rare reward:
+RAINBOW SHIFT GEM
+
+---
+
+# 11. REWARD CHEST
+
+After milestones, give:
+
+# SHIFT CHEST
+
+Chest should have:
+
+* anticipation animation
+* glowing cracks
+* particles
+* lid opening
+* light explosion
+* reward cards
+* gem burst
+* sound crescendo
+
+Possible rewards:
+
+* gems
+* world decorations
+* character skins
+* portal effects
+* trails
+* backgrounds
+* badges
+
+Do not create pay-to-win mechanics.
+
+Rewards should mainly be cosmetic.
+
+---
+
+# 12. PLAYER AVATAR
+
+Create an original character called:
+
+# NOVA
+
+Nova is a small mysterious floating explorer.
+
+Visual direction:
+
+* cute but premium
+* futuristic
+* expressive eyes
+* soft glowing core
+* small floating body
+* minimal silhouette
+* original proportions
+
+Nova should react to gameplay.
+
+Correct answer:
+
+* happy animation
+* small jump
+* glow burst
+
+Perfect answer:
+
+* spins
+* celebrates
+
+Wrong answer:
+
+* disappointed expression
+* short animation
+* never shame the player
+
+Level up:
+
+* cinematic transformation
+
+---
+
+# 13. LOGO
+
+Design a unique BLINK logo.
+
+Logo concept:
+
+A glowing eye-like crystal combined with a small geometric star.
+
+Typography:
+
+* modern
+* rounded
+* bold
+* highly readable at small size
+
+Logo must work in:
+
+* app icon
+* splash screen
+* store listing
+* loading screen
+* social media
+* monochrome format
+
+Create:
+
+1. Full logo
+2. Icon only
+3. Dark background version
+4. Light background version
+5. App icon
+
+Primary visual identity:
+dark cosmic background + luminous crystal accents.
+
+---
+
+# 14. COLOR SYSTEM
+
+Create an original palette.
+
+Base:
+deep night / cosmic background
+
+Primary:
+electric violet / blue family
+
+Secondary:
+mint / cyan / warm yellow accents
+
+Reward:
+bright crystal glow
+
+Danger/error:
+soft red
+
+Do not overuse gradients.
+
+Use light as a gameplay element.
+
+---
+
+# 15. HOME SCREEN
+
+Home screen should feel alive.
+
+Structure:
+
+TOP:
+Profile avatar
+Level
+Gems
+
+CENTER:
+3D/2.5D floating world
+
+NOVA visible in the world
+
+Main CTA:
+
+# PLAY
+
+Below:
+
+DAILY SHIFT
+MYSTERY
+WORLD
+
+Bottom navigation:
+
+HOME
+PLAY
+WORLD
+COLLECTION
+PROFILE
+
+Do not overcrowd the screen.
+
+---
+
+# 16. PLAY SCREEN
+
+When player presses PLAY:
+
+Camera zoom transition into a challenge arena.
+
+Show:
+
+Round 01
+Mechanic name
+Short instruction
+
+Example:
+
+# FIND THE CHANGE
+
+“Watch carefully.”
+
+Countdown:
+
+3
+2
+1
+
+Scene appears.
+
+Timer starts.
+
+Scene disappears.
+
+Answer interface appears.
+
+---
+
+# 17. ANSWER UI
+
+Answers should feel tactile.
+
+Use:
+
+* large buttons
+* rounded panels
+* subtle depth
+* responsive scaling
+
+On correct:
+
+GREEN/CYAN visual confirmation
+
+On wrong:
+
+brief shake
+subtle red flash
+correct answer highlighted
+
+Never create excessive punishment effects.
+
+---
+
+# 18. PERFECT ANSWER
+
+If the player answers extremely quickly and correctly:
+
+Display:
+
+# PERFECT
+
+Animation:
+
+* time slows for a fraction of a second
+* scene freezes
+* energy ring expands
+* particles burst
+* Nova reacts
+* reward multiplier appears
+
+Sound:
+short crystal impact + sparkle.
+
+---
+
+# 19. COMBO SYSTEM
+
+Consecutive correct answers:
+
+x2
+x3
+x4
+x5
+x10
+
+Visual intensity increases.
+
+Example:
+
+x2:
+small glow
+
+x5:
+particles
+
+x10:
+screen border energy effect
+
+x20:
+special Nova aura
+
+Don't make effects so strong that they interfere with gameplay.
+
+---
+
+# 20. STREAK
+
+Daily streak system:
+
+Day 1
+Day 2
+Day 3
+...
+
+Milestone rewards:
+3 days
+7 days
+14 days
+30 days
+60 days
+100 days
+
+Show beautiful calendar visualization.
+
+Avoid manipulative “you'll lose everything” messaging.
+
+---
+
+# 21. COLLECTION
+
+Collection includes:
+
+WORLD ITEMS
+CHARACTER COSMETICS
+TRAILS
+GEMS
+PORTALS
+BADGES
+
+Each item has:
+
+* name
+* rarity
+* animation
+* description
+
+Rarity:
+
+COMMON
+RARE
+EPIC
+LEGENDARY
+MYSTERY
+
+Cosmetics only.
+
+---
+
+# 22. WORLD SCREEN
+
+Full-screen floating world.
+
+Player can pan around.
+
+Unlocked objects are interactive.
+
+Tap tree:
+small animation
+
+Tap portal:
+energy movement
+
+Tap crystal:
+sparkle effect
+
+Tap Nova:
+character reacts
+
+World should continuously evolve.
+
+---
+
+# 23. SOUND DESIGN
+
+Create an original sound system.
+
+Categories:
+
+UI_CLICK
+UI_CONFIRM
+UI_BACK
+COUNTDOWN
+CORRECT
+WRONG
+PERFECT
+COMBO
+GEM_PICKUP
+LEVEL_UP
+CHEST_OPEN
+CHEST_RARE
+PORTAL_UNLOCK
+WORLD_BUILD
+DAILY_COMPLETE
+MYSTERY_COMPLETE
+
+Music:
+
+* calm futuristic ambient menu music
+* energetic gameplay loop
+* mysterious mystery-mode music
+* celebratory reward music
+
+Allow independent settings:
+
+Music:
+100%
+
+SFX:
+100%
+
+Haptics:
+ON/OFF
+
+---
+
+# 24. HAPTICS
+
+Use subtle haptic feedback.
+
+Button tap:
+light
+
+Correct:
+medium
+
+Perfect:
+medium + light sequence
+
+Gem pickup:
+tiny repeated taps
+
+Level up:
+stronger sequence
+
+Never use excessive vibration.
+
+---
+
+# 25. ANIMATION QUALITY
+
+All interactions should have purposeful animation.
+
+Use:
+
+* scale
+* opacity
+* rotation
+* translation
+* elastic easing
+* spring physics
+* particle systems
+* camera movement
+* blur carefully
+* glow
+* depth
+* parallax
+
+Avoid static UI where animation adds useful feedback.
+
+Target:
+60 FPS minimum.
+
+Optimize for mid-range Android devices.
+
+---
+
+# 26. SPECIAL CINEMATIC TRANSITIONS
+
+When entering major features:
+
+Home → Play:
+camera flies through portal
+
+Home → World:
+camera zooms into island
+
+Level up:
+world pauses
+energy flows through island
+Nova transforms
+new object appears
+
+Unlock:
+camera focuses on new object
+object materializes from particles
+
+---
+
+# 27. UI STYLE
+
+Use:
+
+* large rounded cards
+* soft shadows
+* controlled glass effects
+* subtle depth
+* clean typography
+* strong hierarchy
+
+The UI should feel premium but remain fast.
+
+Do not use excessive glassmorphism.
+
+Do not use generic Material components without customization.
+
+---
+
+# 28. RESPONSIVE DESIGN
+
+Support:
+
+small phones
+large phones
+tablets
+
+Portrait-first.
+
+Safe areas must be respected.
+
+Buttons should never be too close to gesture/navigation areas.
+
+All text must scale correctly.
+
+---
+
+# 29. ACCESSIBILITY
+
+Provide:
+
+* color-independent indicators
+* readable text
+* reduced-motion option
+* haptic toggle
+* sound toggle
+* high-contrast option
+
+The game must remain playable without sound.
+
+---
+
+# 30. MONETIZATION
+
+Free game.
+
+Use:
+
+* rewarded ads
+* optional interstitials between suitable sessions
+* cosmetic purchases
+* optional premium plan
+
+Never interrupt an active challenge with an ad.
+
+Possible premium:
+
+# BLINK PLUS
+
+Benefits:
+
+* remove ads
+* extra daily challenge
+* exclusive cosmetics
+* advanced world region
+* bonus statistics
+* additional challenge modes
+
+Do NOT sell competitive advantage.
+
+---
+
+# 31. OFFLINE-FIRST
+
+Core gameplay must work without internet.
+
+Store locally:
+
+* progress
+* XP
+* gems
+* unlocked items
+* settings
+* streak
+
+Internet needed only for:
+
+* cloud backup
+* leaderboard
+* daily challenge synchronization
+* analytics
+* optional purchases/ads
+
+---
+
+# 32. TECHNOLOGY
+
+Use Flutter for the Android app.
+
+Recommended architecture:
+
+Flutter
++
+Riverpod
++
+GoRouter
+
+Gameplay:
+Flame where appropriate
+
+Animations:
+Flutter Animation APIs
+Rive for character/UI animations where useful
+
+Audio:
+a reliable Flutter audio package
+
+Persistence:
+SQLite/Drift or equivalent local database
+
+Cloud:
+Firebase or Supabase
+
+Analytics:
+privacy-conscious analytics
+
+Backend:
+FastAPI/Python only when server-side logic is required
+
+Do not introduce unnecessary backend complexity for V1.
+
+---
+
+# 33. PROJECT STRUCTURE
+
+Create clean folders:
+
+lib/
+app/
+core/
+theme/
+navigation/
+models/
+services/
+repositories/
+database/
+gameplay/
+challenge_engine/
+animations/
+audio/
+screens/
+splash/
+onboarding/
+home/
+play/
+result/
+daily/
+mystery/
+world/
+collection/
+profile/
+settings/
+widgets/
+
+assets/
+images/
+icons/
+sounds/
+music/
+animations/
+
+test/
+integration_test/
+
+---
+
+# 34. ONBOARDING
+
+First launch:
+
+Screen 1:
+Animated logo
+
+Screen 2:
+“Look carefully.”
+
+Screen 3:
+“Everything changes.”
+
+Screen 4:
+“Your challenge begins.”
+
+Ask for:
+
+* display name
+* optional avatar selection
+* sound preference
+* haptic preference
+
+Do not require account creation before playing.
+
+Allow:
+
+# PLAY NOW
+
+Optional account later.
+
+---
+
+# 35. SPLASH SCREEN
+
+Dark cosmic background.
+
+A tiny point of light appears.
+
+Point expands into a crystal.
+
+Crystal forms the BLINK logo.
+
+Logo pulses once.
+
+Then screen transitions into the world.
+
+Duration:
+approximately 1.5–2 seconds.
+
+Do not create a long loading sequence.
+
+---
+
+# 36. FIRST-TIME EXPERIENCE
+
+The first level should be extremely easy.
+
+Tutorial:
+
+“Watch.”
+
+3 objects appear.
+
+“Remember.”
+
+Objects disappear.
+
+“Which one moved?”
+
+Player answers.
+
+Nova celebrates.
+
+Then:
+
+“That's BLINK.”
+
+Immediately start real gameplay.
+
+---
+
+# 37. RESULT SCREEN
+
+After each challenge:
+
+Large result:
+
+# GREAT
+
+or
+
+# PERFECT
+
+or
+
+# KEEP GOING
+
+Show:
+
+Accuracy
+Reaction time
+XP
+Gems
+Combo
+
+Then immediately:
+
+# NEXT CHALLENGE
+
+Avoid forcing users through multiple confirmation screens.
+
+---
+
+# 38. GAME-OVER / FAILURE
+
+Avoid traditional “GAME OVER” where possible.
+
+Instead:
+
+# THE WORLD SHIFTED
+
+“Try again?”
+
+Buttons:
+
+TRY AGAIN
+RETURN HOME
+
+The player should feel invited, not punished.
+
+---
+
+# 39. DAILY CONTENT
+
+Generate a daily seed.
+
+The same seed can create the same daily challenge for all players.
+
+Store:
+
+challenge ID
+difficulty
+seed
+score
+
+This allows fair leaderboard comparison.
+
+---
+
+# 40. LEADERBOARD
+
+Categories:
+
+GLOBAL
+FRIENDS
+COUNTRY (optional)
+WEEKLY
+ALL-TIME
+
+Use anti-cheat validation.
+
+Do not show rankings until the player has completed enough legitimate rounds.
+
+---
+
+# 41. PROFILE
+
+Show:
+
+Player level
+Total challenges
+Accuracy
+Best streak
+Best reaction time
+World progress
+Achievements
+Cosmetics
+Statistics
+
+Include a beautiful radar-style skill visualization:
+
+MEMORY
+REACTION
+PATTERN
+SPATIAL
+PREDICTION
+
+Do not claim these scores are medical or scientific cognitive assessments.
+
+Use wording like:
+
+“Game performance”
+
+not:
+
+“Brain IQ.”
+
+---
+
+# 42. ACHIEVEMENTS
+
+Examples:
+
+FIRST SHIFT
+10 CORRECT
+PERFECT FIVE
+100 CHALLENGES
+7-DAY STREAK
+100-DAY STREAK
+MYSTERY SOLVED
+CHAOS MASTER
+WORLD BUILDER
+
+Achievements unlock cosmetics.
+
+---
+
+# 43. VISUAL EFFECTS
+
+Create reusable particle components:
+
+SparkBurst
+GemTrail
+EnergyRing
+PortalParticles
+DustParticles
+Confetti
+StarField
+GlowPulse
+UnlockExplosion
+
+Particles must be optimized.
+
+Do not overdraw the screen.
+
+---
+
+# 44. CAMERA / PARALLAX
+
+Home/world backgrounds should have 2–4 depth layers.
+
+When the user drags:
+
+foreground moves slightly
+midground moves moderately
+background moves slowly
+
+This creates a premium 2.5D feeling.
+
+---
+
+# 45. ORIGINAL WORLD LORE
+
+Minimal lore:
+
+“The world is unstable.
+
+Every time you stop looking, reality changes.
+
+Nova is trying to understand why.
+
+You are the observer.
+
+But the world is learning from you.”
+
+Keep lore optional.
+
+Do not interrupt gameplay with long text.
+
+---
+
+# 46. FUTURE CONTENT SYSTEM
+
+Design the engine so new mechanics can be added later.
+
+Possible future mechanics:
+
+LIGHT
+SHADOW
+SOUND
+MOTION
+MIRROR
+GRAVITY
+TIME LOOP
+DUPLICATE
+ILLUSION
+PORTAL
+HIDDEN RULE
+
+The architecture must support adding mechanics without rewriting the entire game.
+
+---
+
+# 47. ADS
+
+Use rewarded advertisements primarily.
+
+Example:
+
+After challenge:
+
+“Double your gem reward?”
+
+[WATCH SHORT AD]
+
+Reward:
+2x gems
+
+Never:
+
+* force an ad during an active challenge
+* hide close button
+* misrepresent the reward
+* spam ads every round
+
+---
+
+# 48. PRIVACY
+
+Do not collect unnecessary personal data.
+
+No microphone permission unless the feature genuinely requires it.
+
+No contacts permission.
+
+No SMS access.
+
+No call logs.
+
+No accessibility-service dependency.
+
+No location unless a future feature explicitly requires it.
+
+Explain analytics clearly.
+
+---
+
+# 49. PERFORMANCE TARGET
+
+Target:
+60 FPS
+
+Fast launch.
+
+Low memory usage.
+
+Avoid large unnecessary assets.
+
+Use texture compression.
+
+Preload only what is needed.
+
+Lazy-load cosmetics/world regions.
+
+Do not block the UI during generation.
+
+---
+
+# 50. ERROR HANDLING
+
+If the backend is unavailable:
+
+gameplay still works.
+
+If daily challenge fails:
+
+show a cached challenge or offline challenge.
+
+If ad fails:
+
+continue without ad.
+
+If purchase verification fails:
+
+do not falsely grant permanent premium.
+
+---
+
+# 51. DEVELOPMENT PHASES
+
+Build in the following order.
+
+## PHASE 1 — FOUNDATION
+
+Create:
+
+* Flutter project
+* theme
+* navigation
+* local database
+* settings
+* app icon
+* splash
+
+Deliver working app shell.
+
+---
+
+## PHASE 2 — CORE GAME
+
+Implement:
+
+* challenge engine
+* scene generation
+* timer
+* answer system
+* scoring
+* XP
+* result screen
+
+One complete playable mode.
+
+---
+
+## PHASE 3 — GAME FEEL
+
+Add:
+
+* particles
+* animations
+* haptics
+* sound
+* camera transitions
+* perfect effects
+
+Make the game satisfying before adding more features.
+
+---
+
+## PHASE 4 — PROGRESSION
+
+Add:
+
+* levels
+* gems
+* streak
+* achievements
+* world growth
+* collections
+
+---
+
+## PHASE 5 — CONTENT
+
+Add:
+
+REMEMBER
+CHANGE
+SWAP
+PREDICT
+SEQUENCE
+SPATIAL
+HIDDEN RULE
+CHAOS
+
+---
+
+## PHASE 6 — SOCIAL
+
+Add:
+
+* daily challenge
+* leaderboard
+* share result card
+
+---
+
+## PHASE 7 — MONETIZATION
+
+Add:
+
+* rewarded ads
+* premium
+* cosmetic purchases
+
+---
+
+## PHASE 8 — POLISH
+
+Perform:
+
+* frame-rate optimization
+* animation polish
+* sound balancing
+* accessibility testing
+* tablet testing
+* small-screen testing
+* offline testing
+* crash testing
+
+---
+
+# 52. TESTING REQUIREMENTS
+
+Create automated tests for:
+
+challenge generation
+score calculation
+XP
+gems
+streak
+difficulty
+reward logic
+database persistence
+offline mode
+
+Manual tests:
+
+cold launch
+resume from background
+screen rotation handling
+low-memory device
+slow device
+no internet
+audio disabled
+haptics disabled
+ad unavailable
+purchase failure
+
+---
+
+# 53. PLAY STORE PREPARATION
+
+Create:
+
+App name:
+BLINK
+
+Short description:
+“Observe. Remember. Discover what changed.”
+
+Long description should explain:
+
+* fast visual challenges
+* changing game mechanics
+* daily challenges
+* evolving world
+* cosmetic rewards
+
+Prepare:
+
+* 512x512 app icon
+* phone screenshots
+* feature graphic
+* privacy policy
+* support email
+* content rating
+* data safety information
+
+Do not make medical/cognitive claims.
+
+Do not claim:
+“Improves your intelligence”
+“Scientifically proven brain improvement”
+
+Instead use:
+“Test your observation and memory skills through fast challenges.”
+
+---
+
+# 54. APP ICON
+
+Create:
+
+Dark cosmic rounded square.
+
+Center:
+glowing geometric eye/crystal.
+
+One small broken ring around it.
+
+Minimal.
+
+The icon must remain recognizable at small size.
+
+---
+
+# 55. FINAL VISUAL DIRECTION
+
+Overall feeling:
+
+Mysterious
+Premium
+Fast
+Colorful
+Cosmic
+Playful
+Modern
+Responsive
+
+Think:
+
+“interactive animated world”
+
+not:
+
+“form-heavy utility app.”
+
+Every tap should feel physical.
+
+Every reward should feel alive.
+
+Every important action should have:
+animation + sound + optional haptic.
+
+---
+
+# 56. IMPORTANT PRODUCT RULE
+
+Never rely solely on increasing difficulty.
+
+Every 5–10 sessions the player should encounter something meaningfully new:
+
+new mechanic
+new environment
+new visual rule
+new challenge type
+new mystery
+new world element
+
+The player should repeatedly think:
+
+> “I haven't seen this before.”
+
+That is the primary retention principle.
+
+---
+
+# 57. FINAL ACCEPTANCE CRITERIA
+
+Do not consider the project finished until:
+
+1. The game is playable from fresh install.
+2. The first challenge can be completed without explanation from outside the app.
+3. Core gameplay works offline.
+4. At least 7 challenge mechanics work.
+5. Challenge generation produces logically valid rounds.
+6. The world visually evolves.
+7. Gems have satisfying animations.
+8. Nova has expressive animations.
+9. Sound effects are integrated.
+10. Haptics are integrated.
+11. Daily challenge works.
+12. Streak works.
+13. Progress is persisted.
+14. Ads never interrupt active gameplay.
+15. The UI maintains 60 FPS on a reasonable mid-range Android device.
+16. The design is visually original.
+17. No copyrighted game assets are copied.
+18. The app does not make unsupported medical or cognitive claims.
+19. The app can be built into a signed Android App Bundle.
+20. The final result feels like a real commercial mobile game, not a prototype.
+
+START WITH PHASE 1.
+
+Do not implement everything in one giant code dump.
+
+Build one complete vertical slice first:
+
+SPLASH
+→ ONBOARDING
+→ HOME
+→ ONE CHALLENGE
+→ RESULT
+→ REWARD
+→ HOME
+
+Make this slice polished first.
+
+Then expand feature by feature while keeping architecture modular and production-ready.

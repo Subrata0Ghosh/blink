@@ -1,0 +1,432 @@
+Create a complete ORIGINAL visual asset pack for a premium mobile game called **BLINK — The World Changes When You Look Away**.
+
+IMPORTANT:
+
+* All designs must be completely original.
+* Do NOT copy characters, environments, UI, logos, effects, shapes, compositions, colors, or visual assets from Clash of Clans, Subway Surfers, Candy Crush, Monument Valley, Pokémon, or any other existing game.
+* Use only the general quality level of modern premium mobile games as inspiration.
+* The visual identity must be recognizable as its own IP.
+* Use a polished mobile-game aesthetic suitable for Google Play Store.
+* Assets must be consistent with each other in perspective, lighting, proportions, materials, and art direction.
+
+# CORE ART STYLE
+
+Style:
+
+* premium stylized 3D / 2.5D mobile game
+* mysterious cosmic fantasy
+* playful but sophisticated
+* polished casual-game appearance
+* rounded forms
+* smooth bevels
+* soft cinematic lighting
+* luminous crystal materials
+* subtle depth
+* colorful but not excessively saturated
+* clean silhouettes
+* highly readable on a phone screen
+
+Environment:
+
+* deep cosmic night
+* floating islands
+* glowing particles
+* distant stars
+* subtle atmospheric fog
+* magical energy
+* crystalline technology mixed with natural elements
+
+Lighting:
+
+* soft ambient light
+* strong rim lighting
+* emissive crystals
+* subtle bloom
+* controlled reflections
+* soft shadows
+
+Do not make it photorealistic.
+Do not make it childish cartoon art.
+Aim for premium stylized game art.
+
+# 1. MAIN CHARACTER — NOVA
+
+Create an original mascot character named **NOVA**.
+
+Concept:
+A small mysterious floating explorer who exists inside the BLINK world.
+
+Appearance:
+
+* compact floating body
+* large expressive eyes
+* small glowing energy core
+* rounded head
+* tiny floating limbs
+* subtle futuristic details
+* crystalline energy elements
+* friendly but mysterious expression
+* unique silhouette recognizable at thumbnail size
+
+Create these poses:
+
+1. Nova Idle
+2. Nova Happy
+3. Nova Perfect
+4. Nova Excited
+5. Nova Curious
+6. Nova Surprised
+7. Nova Disappointed
+8. Nova Celebrating
+9. Nova Looking Around
+10. Nova Portal Interaction
+
+Provide front, 3/4 and side views where useful.
+
+# 2. BLINK LOGO
+
+Create an original logo.
+
+Text:
+BLINK
+
+Concept:
+A mysterious glowing eye combined with a geometric crystal/star.
+
+Requirements:
+
+* bold rounded futuristic typography
+* highly readable
+* memorable silhouette
+* premium mobile-game branding
+* small-size readability
+
+Create:
+
+* full logo
+* icon-only mark
+* horizontal logo
+* centered logo
+* monochrome version
+* dark-background version
+* light-background version
+
+# 3. APP ICON
+
+Create a Google Play app icon.
+
+Requirements:
+
+* square with rounded corners
+* dark cosmic background
+* central luminous geometric eye/crystal
+* extremely simple composition
+* recognizable at tiny size
+* strong silhouette
+* no tiny unreadable text
+
+# 4. BLINK WORLD
+
+Create the main floating world.
+
+Scene:
+
+* large floating island
+* glowing grass
+* crystal formations
+* tiny trees
+* magical rocks
+* ancient futuristic structures
+* small pathways
+* floating particles
+* distant floating islands
+* stars
+* portals
+
+The world must feel like a place that can continuously evolve.
+
+Create modular assets:
+
+* floating island
+* small island
+* crystal field
+* tree
+* magical tree
+* rock
+* glowing rock
+* tower
+* observatory
+* bridge
+* portal
+* energy core
+* small building
+* mystery structure
+* decorative plants
+
+# 5. SHIFT GEMS
+
+Create the game's main reward currency.
+
+Name:
+SHIFT GEM
+
+Appearance:
+
+* faceted crystal
+* glowing center
+* slightly magical
+* elegant shape
+* strong silhouette
+
+Create variations:
+
+* common blue gem
+* cyan gem
+* violet gem
+* gold gem
+* rare rainbow gem
+
+Create:
+
+* single gem
+* gem cluster
+* spinning gem
+* floating gem
+* gem burst
+* gem trail
+* gem reward pile
+
+# 6. GAMEPLAY OBJECTS
+
+Create a reusable object library.
+
+Objects:
+
+* orb
+* crystal
+* cube
+* triangle
+* star
+* moon
+* ring
+* leaf
+* flower
+* lantern
+* small portal
+* energy sphere
+* prism
+* tiny robot
+* floating stone
+
+Each object needs:
+
+* unique silhouette
+* 3–4 color variants
+* normal state
+* selected state
+* glowing state
+* changed state
+
+Objects must remain visually distinguishable even at small sizes.
+
+# 7. PORTAL
+
+Create a signature BLINK portal.
+
+Design:
+
+* circular/elliptical dimensional gateway
+* crystalline outer frame
+* glowing energy center
+* moving inner particles
+* subtle distortion
+* magical futuristic appearance
+
+Create states:
+
+* inactive
+* charging
+* active
+* opening
+* teleporting
+
+# 8. CHEST
+
+Create an original reward chest called:
+
+SHIFT CHEST
+
+Design:
+
+* small futuristic treasure chest
+* crystal construction
+* glowing seams
+* mysterious symbols
+* premium fantasy appearance
+
+States:
+
+* closed
+* glowing
+* shaking
+* opening
+* fully open
+
+# 9. UI ELEMENTS
+
+Create a matching UI asset set:
+
+* button backgrounds
+* primary button
+* secondary button
+* disabled button
+* XP bar
+* gem counter
+* level badge
+* combo badge
+* timer
+* progress ring
+* reward card
+* achievement badge
+* chest card
+* daily challenge card
+* mystery card
+* profile frame
+
+UI should feel:
+
+* premium
+* clean
+* slightly futuristic
+* rounded
+* tactile
+
+Avoid excessive glassmorphism.
+
+# 10. ACHIEVEMENT BADGES
+
+Create original achievement icons:
+
+* First Shift
+* Perfect Five
+* Memory Master
+* Change Hunter
+* Pattern Finder
+* Chaos Master
+* World Builder
+* 7 Day Streak
+* 30 Day Streak
+* 100 Day Streak
+* Mystery Solver
+* Portal Keeper
+
+Each badge must have a unique visual symbol.
+
+# 11. VFX ASSETS
+
+Create original visual-effect assets:
+
+* sparkle burst
+* crystal burst
+* energy ring
+* perfect-answer burst
+* combo aura
+* level-up explosion
+* portal particles
+* gem collection trail
+* unlock particles
+* world-growth particles
+* star particles
+* dust
+* magical smoke
+* soft glow
+
+VFX should be suitable for animation and compositing.
+
+# 12. WORLD TRANSFORMATION
+
+Create before/after visual stages.
+
+Stage 1:
+small empty floating island
+
+Stage 2:
+trees and crystals appear
+
+Stage 3:
+structures appear
+
+Stage 4:
+portal activates
+
+Stage 5:
+large crystalline transformation
+
+Stage 6:
+advanced glowing world
+
+The transformation must feel rewarding and cinematic.
+
+# 13. SCREEN BACKGROUNDS
+
+Create modular backgrounds:
+
+* main menu cosmic background
+* gameplay background
+* mystery background
+* reward background
+* world background
+* level-up background
+* portal background
+
+Keep enough empty space for UI.
+
+# 14. ART CONSISTENCY
+
+Every asset must share:
+
+* same lighting direction
+* same material language
+* same perspective
+* same visual scale
+* same cosmic fantasy setting
+* same crystal technology vocabulary
+* same level of detail
+
+Nova must visually belong in the world.
+
+The gems must visually belong to the world.
+
+The UI must visually belong to the world.
+
+# 15. OUTPUT REQUIREMENTS
+
+Create assets in formats suitable for mobile development:
+
+* PNG with transparent background for isolated objects
+* SVG where appropriate for logos/simple icons
+* high-resolution source versions
+* multiple resolutions when useful
+
+For every major asset, create clean isolated versions.
+
+Do not add:
+
+* watermarks
+* signatures
+* text unless specifically requested
+* copyrighted logos
+* existing game characters
+* existing game UI elements
+
+# 16. ART DIRECTION GOAL
+
+The final game should communicate this feeling:
+
+“You are inside a beautiful world that changes whenever you stop looking.”
+
+The player should immediately recognize:
+
+BLINK = observation + mystery + changing reality + crystals + cosmic exploration.
+
+Make the visual identity strong enough that a screenshot without the app name is still recognizable as BLINK.
