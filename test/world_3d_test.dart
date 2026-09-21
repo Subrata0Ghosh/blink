@@ -71,7 +71,7 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('HomeScreen renders with World3dDiorama and BlinkButton', (tester) async {
+    testWidgets('HomeScreen renders with Play button and BLINK title', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -81,9 +81,8 @@ void main() {
       );
 
       expect(find.byType(HomeScreen), findsOneWidget);
-      expect(find.byType(World3dDiorama), findsOneWidget);
-      expect(find.byType(BlinkButton), findsOneWidget);
-      expect(find.text('THE SHIFT WORLD'), findsOneWidget);
+      expect(find.text('PLAY'), findsOneWidget);
+      expect(find.text('BLINK'), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 100));
     });

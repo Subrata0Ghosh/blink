@@ -3,8 +3,12 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Reusable Bottom Navigation Bar for BLINK
-/// Handles seamless tab switching across Home, Play, World, Collect, and Profile
+/// Cosmic Bottom Navigation Bar for BLINK
+/// Features:
+/// - Dark glassmorphic base matching BLINK's cosmic identity
+/// - Active tab: Glowing cyan accent underline + bright icon
+/// - Inactive tabs: Muted icons
+/// - Outfit typography consistent with Profile & Collectible screens
 class GameBottomNav extends StatelessWidget {
   final int currentIndex;
 
@@ -18,26 +22,31 @@ class GameBottomNav extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.glassBorder)),
+        border: const Border(
+          top: BorderSide(
+            color: AppColors.glassBorder,
+            width: 1.0,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 14,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+        top: false,
+        child: SizedBox(
+          height: 68,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildNavItem(context, 0, Icons.home_rounded, 'HOME', '/home'),
-              _buildNavItem(context, 1, Icons.play_circle_rounded, 'PLAY', '/play'),
-              _buildNavItem(context, 2, Icons.public_rounded, 'WORLD', '/world'),
-              _buildNavItem(context, 3, Icons.grid_view_rounded, 'COLLECT', '/collect'),
-              _buildNavItem(context, 4, Icons.person_rounded, 'PROFILE', '/profile'),
+              _buildTab(context, 0, Icons.map_rounded, 'MAP', '/world'),
+              _buildTab(context, 1, Icons.today_rounded, 'EVENTS', '/daily-shift'),
+              _buildTab(context, 2, Icons.storefront_rounded, 'SHOP', '/collect'),
+              _buildTab(context, 3, Icons.person_rounded, 'PROFILE', '/profile'),
             ],
           ),
         ),
@@ -45,7 +54,7 @@ class GameBottomNav extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(
+  Widget _buildTab(
     BuildContext context,
     int index,
     IconData icon,
@@ -54,42 +63,58 @@ class GameBottomNav extends StatelessWidget {
   ) {
     final isSelected = currentIndex == index;
 
-    return GestureDetector(
-      onTap: () {
-        if (currentIndex == index) return;
-        if (index == 1) {
-          context.push(route);
-        } else {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (currentIndex == index) return;
           context.go(route);
-        }
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? AppColors.primary.withValues(alpha: 0.18)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: isSelected
-              ? Border.all(color: AppColors.cyan.withValues(alpha: 0.35))
-              : null,
-        ),
+        },
+        behavior: HitTestBehavior.opaque,
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Animated glowing dot for active tab
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              width: isSelected ? 32 : 0,
+              height: 3,
+              margin: const EdgeInsets.only(bottom: 6),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(2),
+                color: isSelected ? AppColors.cyan : Colors.transparent,
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.cyan.withValues(alpha: 0.6),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : null,
+              ),
+            ),
+            // Icon
             Icon(
               icon,
-              size: 22,
+              size: isSelected ? 24 : 22,
               color: isSelected ? AppColors.cyan : AppColors.textMuted,
+              shadows: isSelected
+                  ? [
+                      BoxShadow(
+                        color: AppColors.cyan.withValues(alpha: 0.4),
+                        blurRadius: 8,
+                      ),
+                    ]
+                  : null,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 3),
+            // Label
             Text(
               label,
               style: GoogleFonts.outfit(
-                fontSize: 9,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
+                fontSize: isSelected ? 11 : 10,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? AppColors.cyan : AppColors.textMuted,
                 letterSpacing: 0.8,
               ),

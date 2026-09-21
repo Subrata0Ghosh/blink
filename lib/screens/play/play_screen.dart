@@ -1,15 +1,18 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../gameplay/challenge_engine/challenge_engine.dart';
 import '../../gameplay/challenge_engine/game_objects.dart';
 import '../../gameplay/rendering/arena_surface.dart';
 import '../../gameplay/rendering/tactile_object.dart';
 import '../../gameplay/rendering/radial_energy_timer.dart';
+import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/particles/particles.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
@@ -334,9 +337,26 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          // Cosmic Starfield background
-          const StarField(starCount: 45),
-          const FloatingParticles(count: 10, color: AppColors.primaryLight),
+          // Deep cosmic space gradient backdrop
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0.0, -0.2),
+                  radius: 1.3,
+                  colors: [
+                    Color(0xFF161B38), // Subtle nebula center
+                    Color(0xFF0F1328), // Mid depth
+                    AppColors.background, // Deep space black
+                  ],
+                  stops: [0.0, 0.5, 1.0],
+                ),
+              ),
+            ),
+          ),
+          const Positioned.fill(
+            child: StarField(starCount: 30),
+          ),
 
           SafeArea(
             child: Column(
@@ -371,39 +391,60 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
               ),
             ),
 
-          // Perfect Celebration Text Overlay
-          if (_showPerfect)
+          // Celebration Banner Overlay (PERFECT! / COSMIC SHIFT!)
+          if (_showPerfect || (_lastAnswerCorrect == true && _phase == _GamePhase.answer))
             Center(
               child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.4, end: 1.15),
-                duration: const Duration(milliseconds: 550),
+                tween: Tween(begin: 0.3, end: 1.1),
+                duration: const Duration(milliseconds: 500),
                 curve: Curves.elasticOut,
                 builder: (context, scale, child) {
                   return Transform.scale(
                     scale: scale,
-                    child: Text(
-                      'PERFECT',
-                      style: GoogleFonts.outfit(
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.cyan,
-                        letterSpacing: 6,
-                        shadows: [
-                          Shadow(
-                            color: AppColors.cyan.withValues(alpha: 0.8),
-                            blurRadius: 32,
-                          ),
-                          Shadow(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.primary, AppColors.primaryDark],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        borderRadius: BorderRadius.circular(36),
+                        border: Border.all(color: AppColors.glassBorder, width: 2),
+                        boxShadow: [
+                          BoxShadow(
                             color: AppColors.primary.withValues(alpha: 0.5),
-                            blurRadius: 60,
+                            blurRadius: 24,
+                            offset: const Offset(0, 6),
                           ),
                         ],
+                      ),
+                      child: Text(
+                        _showPerfect ? 'COSMIC SHIFT!' : 'PERFECT!',
+                        style: GoogleFonts.outfit(
+                          fontSize: 38,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.cyan,
+                          letterSpacing: 2,
+                          shadows: [
+                            Shadow(
+                              color: AppColors.cyan.withValues(alpha: 0.6),
+                              offset: const Offset(0, 0),
+                              blurRadius: 12,
+                            ),
+                            const Shadow(
+                              color: Color(0xFF001830),
+                              offset: Offset(0, 3),
+                              blurRadius: 3,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   );
                 },
                 onEnd: () {
-                  Future.delayed(const Duration(milliseconds: 500), () {
+                  Future.delayed(const Duration(milliseconds: 700), () {
                     if (mounted) setState(() => _showPerfect = false);
                   });
                 },
@@ -415,81 +456,126 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
   }
 
   Widget _buildTopBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 6, 14, 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: AppColors.glassBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          // Close button
-          GestureDetector(
-            onTap: () => context.pop(),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.glassBorder),
-              ),
-              child: const Icon(Icons.close_rounded, color: AppColors.textMuted, size: 20),
-            ),
+          // Close Button
+          TactileButton.circle(
+            size: 38,
+            faceColorTop: AppColors.surfaceLight,
+            faceColorBottom: const Color(0xFF0F1328),
+            rimColor: const Color(0xFF080C1A),
+            onTap: () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/world');
+              }
+            },
+            child: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
           ),
-          const Spacer(),
 
-          // Round indicator (tappable 5 times to toggle hidden debug mode)
+          const SizedBox(width: 12),
+
+          // Round Indicator
           GestureDetector(
             onTap: _handleRoundTapForDebug,
             behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: _showDebug ? AppColors.primary.withValues(alpha: 0.25) : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _showDebug ? 'DEBUG ROUND $_round / 5' : 'ROUND $_round / 5',
-                style: GoogleFonts.outfit(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: _showDebug ? AppColors.cyan : AppColors.textMuted,
-                  letterSpacing: 1.5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _showDebug ? 'DEBUG ROUND $_round / 5' : 'ROUND $_round / 5',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                    letterSpacing: 1.0,
+                  ),
                 ),
-              ),
+                if (_combo > 1)
+                  Text(
+                    'Combo x$_combo 🔥',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.gold,
+                    ),
+                  ),
+              ],
             ),
           ),
 
           const Spacer(),
 
-          // Combo indicator
-          if (_combo > 1)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.gold.withValues(alpha: 0.25),
-                    AppColors.amber.withValues(alpha: 0.12),
-                  ],
+          // Star progress meter (3 stars)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(3, (i) {
+              final earned = i < (_round > 1 ? min(3, (_correctCount * 3 / 5).ceil()) : 0);
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Icon(
+                  earned ? Icons.star_rounded : Icons.star_border_rounded,
+                  color: earned ? AppColors.gold : AppColors.textMuted.withValues(alpha: 0.5),
+                  size: 24,
+                  shadows: earned
+                      ? [
+                          BoxShadow(
+                            color: AppColors.gold.withValues(alpha: 0.5),
+                            blurRadius: 6,
+                          ),
+                        ]
+                      : null,
                 ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.gold.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: Text(
-                'x$_combo',
-                style: GoogleFonts.outfit(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.gold,
+              );
+            }),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Companion Nova avatar
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4), width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cyan.withValues(alpha: 0.15),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                AppAssets.novaIdle,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Icon(
+                  Icons.visibility_rounded,
+                  color: AppColors.cyan,
+                  size: 22,
                 ),
               ),
-            )
-          else
-            const SizedBox(width: 40),
+            ),
+          ),
         ],
       ),
     );
@@ -765,27 +851,47 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: Column(
           children: [
-            // Timer Bar
+            // Timer Bar in Cosmic Glass Capsule
             ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 5,
-                backgroundColor: AppColors.surfaceLight,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isLow ? AppColors.error : AppColors.cyan,
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                height: 10,
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
+                ),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: Colors.transparent,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isLow ? AppColors.dangerRed : AppColors.cosmicCyan,
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Question Box
+            // Question Box in Cosmic Glass Card
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.glassBorder),
+                color: AppColors.surface.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: AppColors.cyan.withValues(alpha: 0.35), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.cyan.withValues(alpha: 0.12),
+                    blurRadius: 16,
+                    spreadRadius: 1,
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Text(
                 _challenge!.question,
@@ -793,7 +899,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                 style: GoogleFonts.outfit(
                   fontSize: 21,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
                   height: 1.25,
                 ),
               ),
@@ -801,10 +908,10 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
             const Spacer(),
 
-            // Tactile Answer Buttons
+            // Tactile 3D Candy Answer Buttons
             ..._challenge!.answers.asMap().entries.map((entry) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 14),
                 child: _TactileAnswerButton(
                   index: entry.key,
                   text: entry.value,
@@ -824,7 +931,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
   }
 }
 
-/// Tactile, juicy answer button with spring-press physics and crisp result states
+/// Tactile, juicy 3D answer button with extruded bevel rim and spring-press physics
 class _TactileAnswerButton extends StatefulWidget {
   final int index;
   final String text;
@@ -849,17 +956,17 @@ class _TactileAnswerButton extends StatefulWidget {
 class _TactileAnswerButtonState extends State<_TactileAnswerButton>
     with SingleTickerProviderStateMixin {
   late AnimationController _pressController;
-  late Animation<double> _scaleAnimation;
+  late Animation<double> _pressOffsetAnim;
 
   @override
   void initState() {
     super.initState();
     _pressController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 140),
+      duration: const Duration(milliseconds: 90),
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
-      CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
+    _pressOffsetAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _pressController, curve: Curves.easeOutQuad),
     );
   }
 
@@ -871,114 +978,194 @@ class _TactileAnswerButtonState extends State<_TactileAnswerButton>
 
   @override
   Widget build(BuildContext context) {
-    Color bgColor = AppColors.surfaceLight;
-    Color borderColor = AppColors.glassBorder;
-    Color textColor = AppColors.textPrimary;
-    List<BoxShadow>? shadows = [
-      BoxShadow(
-        color: Colors.black.withValues(alpha: 0.25),
-        blurRadius: 8,
-        offset: const Offset(0, 3),
-      ),
+    // 4 Cosmic color themes (Cyan, Purple, Green, Nova Orange)
+    final colors = [
+      (AppColors.cosmicCyanLight, AppColors.cosmicCyanDark, AppColors.cosmicCyanRim),
+      (AppColors.nebulaPurpleLight, AppColors.nebulaPurpleDark, AppColors.nebulaPurpleRim),
+      (AppColors.stellarGreenLight, AppColors.stellarGreenDark, AppColors.stellarGreenRim),
+      (AppColors.novaOrangeLight, AppColors.novaOrangeDark, AppColors.novaOrangeRim),
     ];
+
+    final theme = colors[widget.index % colors.length];
+    Color faceTop = theme.$1;
+    Color faceBottom = theme.$2;
+    Color rim = theme.$3;
 
     if (widget.showResult) {
       if (widget.isCorrect) {
-        bgColor = AppColors.success.withValues(alpha: 0.18);
-        borderColor = AppColors.success;
-        textColor = AppColors.success;
-        shadows = [
-          BoxShadow(
-            color: AppColors.success.withValues(alpha: 0.4),
-            blurRadius: 16,
-            spreadRadius: 1,
-          ),
-        ];
+        faceTop = const Color(0xFF67F573);
+        faceBottom = const Color(0xFF169E24);
+        rim = const Color(0xFF0F6817);
       } else if (widget.isSelected && !widget.isCorrect) {
-        bgColor = AppColors.error.withValues(alpha: 0.18);
-        borderColor = AppColors.error;
-        textColor = AppColors.error;
-        shadows = [
-          BoxShadow(
-            color: AppColors.error.withValues(alpha: 0.35),
-            blurRadius: 12,
-          ),
-        ];
+        faceTop = const Color(0xFFFF6E6E);
+        faceBottom = const Color(0xFFD42222);
+        rim = const Color(0xFF8A0B0B);
       }
     }
 
+    const double height = 58;
+    const double rimHeight = 5;
+    const double borderRadius = 24;
+
     return GestureDetector(
-      onTapDown: (_) => _pressController.forward(),
+      onTapDown: (_) {
+        _pressController.forward();
+        HapticFeedback.lightImpact();
+      },
       onTapUp: (_) {
         _pressController.reverse();
         widget.onTap();
       },
       onTapCancel: () => _pressController.reverse(),
       child: AnimatedBuilder(
-        animation: _scaleAnimation,
+        animation: _pressOffsetAnim,
         builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          );
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 22),
-          decoration: BoxDecoration(
-            color: bgColor,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: borderColor,
-              width: widget.isSelected ? 2.0 : 1.2,
-            ),
-            boxShadow: shadows,
-          ),
-          child: Row(
-            children: [
-              // Answer Index badge
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.surface,
-                  border: Border.all(color: borderColor),
-                ),
-                child: Center(
-                  child: Text(
-                    String.fromCharCode(65 + widget.index),
-                    style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: textColor,
+          final t = _pressOffsetAnim.value;
+          final pushDown = t * (rimHeight - 1);
+
+          return SizedBox(
+            width: double.infinity,
+            height: height + rimHeight,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // 3D Rim (Extruded bottom bevel)
+                Positioned(
+                  top: rimHeight,
+                  left: 0,
+                  right: 0,
+                  height: height,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: rim,
+                      borderRadius: BorderRadius.circular(borderRadius),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.28),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 14),
 
-              // Answer text
-              Expanded(
-                child: Text(
-                  widget.text,
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: textColor,
+                // Top Glossy Face
+                Positioned(
+                  top: pushDown,
+                  left: 0,
+                  right: 0,
+                  height: height,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(borderRadius),
+                      gradient: LinearGradient(
+                        colors: [faceTop, faceBottom],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.5),
+                        width: 1.8,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(borderRadius),
+                      child: Stack(
+                        children: [
+                          // Top Specular Highlight Crescent
+                          Positioned(
+                            top: 1,
+                            left: 8,
+                            right: 8,
+                            height: height * 0.42,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(borderRadius * 0.8),
+                                  bottom: const Radius.elliptical(60, 10),
+                                ),
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.55),
+                                    Colors.white.withValues(alpha: 0.05),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Option Content
+                          Center(
+                            child: Row(
+                              children: [
+                                // Letter Badge (A, B, C, D)
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withValues(alpha: 0.95),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.2),
+                                        blurRadius: 3,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      String.fromCharCode(65 + widget.index),
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w900,
+                                        color: rim,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 14),
+
+                                // Option Text
+                                Expanded(
+                                  child: Text(
+                                    widget.text,
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                      shadows: [
+                                        Shadow(
+                                          color: rim.withValues(alpha: 0.9),
+                                          offset: const Offset(0, 2),
+                                          blurRadius: 2,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                                // Result icon
+                                if (widget.showResult && widget.isCorrect)
+                                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 26),
+                                if (widget.showResult && widget.isSelected && !widget.isCorrect)
+                                  const Icon(Icons.cancel_rounded, color: Colors.white, size: 26),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
-
-              // Result icon
-              if (widget.showResult && widget.isCorrect)
-                const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 22),
-              if (widget.showResult && widget.isSelected && !widget.isCorrect)
-                const Icon(Icons.cancel_rounded, color: AppColors.error, size: 22),
-            ],
-          ),
-        ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

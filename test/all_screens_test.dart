@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:blink/screens/home/home_screen.dart';
 import 'package:blink/screens/world/world_screen.dart';
 import 'package:blink/screens/collect/collect_screen.dart';
@@ -13,7 +14,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('All Navigation & Game Screens Test Suite', () {
-    testWidgets('HomeScreen renders with quick option shortcuts and GameBottomNav', (tester) async {
+    testWidgets('HomeScreen renders with Play button, Level Map, and Title', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -23,15 +24,14 @@ void main() {
       );
 
       expect(find.byType(HomeScreen), findsOneWidget);
-      expect(find.text('DAILY\nSHIFT'), findsOneWidget);
-      expect(find.text('MYSTERY'), findsOneWidget);
-      expect(find.text('WORLD'), findsWidgets); // quick button & bottom nav
-      expect(find.byType(GameBottomNav), findsOneWidget);
+      expect(find.text('PLAY'), findsOneWidget);
+      expect(find.text('LEVEL MAP'), findsOneWidget);
+      expect(find.text('BLINK'), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('WorldScreen mounts with InteractiveViewer, structures, and pan gesture', (tester) async {
+    testWidgets('WorldScreen mounts with CandyTopBar, Level Road, and GameBottomNav', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -41,11 +41,9 @@ void main() {
       );
 
       expect(find.byType(WorldScreen), findsOneWidget);
-      expect(find.byType(InteractiveViewer), findsOneWidget);
-      expect(find.textContaining('WORLD MAP'), findsOneWidget);
+      expect(find.byType(GameBottomNav), findsOneWidget);
+      expect(find.text('MAP'), findsOneWidget);
 
-      // Pan the world map
-      await tester.drag(find.byType(InteractiveViewer), const Offset(-50, -50));
       await tester.pump(const Duration(milliseconds: 100));
     });
 
@@ -91,17 +89,34 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     });
 
-    testWidgets('DailyShiftScreen mounts and initializes portal sequence', (tester) async {
+    testWidgets('DailyShiftScreen mounts and close button navigates to world', (tester) async {
+      final router = GoRouter(
+        initialLocation: '/daily-shift',
+        routes: [
+          GoRoute(path: '/world', builder: (_, __) => const Scaffold(body: Text('World Screen'))),
+          GoRoute(path: '/daily-shift', builder: (_, __) => const DailyShiftScreen()),
+        ],
+      );
+
       await tester.pumpWidget(
-        const ProviderScope(
-          child: MaterialApp(
-            home: DailyShiftScreen(),
+        ProviderScope(
+          child: MaterialApp.router(
+            routerConfig: router,
           ),
         ),
       );
 
       expect(find.byType(DailyShiftScreen), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 200));
+      // Complete portal animation (1300ms)
+      await tester.pump(const Duration(milliseconds: 1400));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final closeBtn = find.byIcon(Icons.close_rounded);
+      expect(closeBtn, findsOneWidget);
+      await tester.tap(closeBtn);
+      await tester.pumpAndSettle();
+
+      expect(find.text('World Screen'), findsOneWidget);
     });
 
     testWidgets('MysteryScreen mounts and displays cryptic mystery challenge', (tester) async {

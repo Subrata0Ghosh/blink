@@ -300,7 +300,7 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
           ),
         ],
       ),
-      bottomNavigationBar: const GameBottomNav(currentIndex: 3),
+      bottomNavigationBar: const GameBottomNav(currentIndex: 2),
     );
   }
 

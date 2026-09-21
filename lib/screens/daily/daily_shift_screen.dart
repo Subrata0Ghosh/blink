@@ -116,6 +116,15 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
     }
   }
 
+  void _handleClose() {
+    triggerHaptic(ref, HapticService.lightTap);
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/world');
+    }
+  }
+
   @override
   void dispose() {
     _portalTimer?.cancel();
@@ -182,15 +191,16 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
                     child: Row(
                       children: [
                         GestureDetector(
-                          onTap: () => context.pop(),
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _handleClose,
                           child: Container(
-                            width: 40,
-                            height: 40,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               color: AppColors.surfaceLight,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(Icons.close_rounded, color: AppColors.textMuted, size: 20),
+                            child: const Icon(Icons.close_rounded, color: AppColors.textPrimary, size: 22),
                           ),
                         ),
                         const Spacer(),
@@ -370,7 +380,7 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
                       SizedBox(
                         width: 200,
                         child: ElevatedButton(
-                          onPressed: () => context.pop(),
+                          onPressed: _handleClose,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.cyan,
                             padding: const EdgeInsets.symmetric(vertical: 16),

@@ -320,7 +320,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: const GameBottomNav(currentIndex: 4),
+      bottomNavigationBar: const GameBottomNav(currentIndex: 3),
     );
   }
 

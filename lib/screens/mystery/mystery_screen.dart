@@ -93,6 +93,15 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
     }
   }
 
+  void _handleClose() {
+    triggerHaptic(ref, HapticService.lightTap);
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/world');
+    }
+  }
+
   @override
   void dispose() {
     _observationTimer?.cancel();
@@ -142,16 +151,17 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                   child: Row(
                     children: [
                       GestureDetector(
-                        onTap: () => context.pop(),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _handleClose,
                         child: Container(
-                          width: 40,
-                          height: 40,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
                             color: AppColors.surfaceLight,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: AppColors.gemPurple.withValues(alpha: 0.3)),
                           ),
-                          child: const Icon(Icons.close_rounded, color: AppColors.textMuted, size: 20),
+                          child: const Icon(Icons.close_rounded, color: AppColors.textPrimary, size: 22),
                         ),
                       ),
                       const Spacer(),
@@ -367,7 +377,7 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                       SizedBox(
                         width: 200,
                         child: ElevatedButton(
-                          onPressed: () => context.pop(),
+                          onPressed: _handleClose,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.gemPurple,
                             padding: const EdgeInsets.symmetric(vertical: 16),
