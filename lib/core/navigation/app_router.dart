@@ -5,6 +5,11 @@ import '../../screens/onboarding/onboarding_screen.dart';
 import '../../screens/home/home_screen.dart';
 import '../../screens/play/play_screen.dart';
 import '../../screens/result/result_screen.dart';
+import '../../screens/world/world_screen.dart';
+import '../../screens/collect/collect_screen.dart';
+import '../../screens/profile/profile_screen.dart';
+import '../../screens/daily/daily_shift_screen.dart';
+import '../../screens/mystery/mystery_screen.dart';
 
 /// App navigation using GoRouter
 GoRouter createRouter({required bool onboardingComplete}) {
@@ -63,6 +68,73 @@ GoRouter createRouter({required bool onboardingComplete}) {
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             final scaleAnim = Tween<double>(begin: 0.9, end: 1.0).animate(
               CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+            );
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(scale: scaleAnim, child: child),
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/world',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          transitionDuration: const Duration(milliseconds: 400),
+          child: const WorldScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/collect',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          transitionDuration: const Duration(milliseconds: 400),
+          child: const CollectScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/profile',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          transitionDuration: const Duration(milliseconds: 400),
+          child: const ProfileScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/daily-shift',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          transitionDuration: const Duration(milliseconds: 500),
+          child: const DailyShiftScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+            );
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(scale: scaleAnim, child: child),
+            );
+          },
+        ),
+      ),
+      GoRoute(
+        path: '/mystery',
+        pageBuilder: (context, state) => CustomTransitionPage(
+          key: state.pageKey,
+          transitionDuration: const Duration(milliseconds: 500),
+          child: const MysteryScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
             );
             return FadeTransition(
               opacity: animation,

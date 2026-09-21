@@ -7,12 +7,20 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../gameplay/challenge_engine/challenge_engine.dart';
 import '../../gameplay/challenge_engine/game_objects.dart';
+import '../../gameplay/rendering/arena_surface.dart';
+import '../../gameplay/rendering/tactile_object.dart';
+import '../../gameplay/rendering/radial_energy_timer.dart';
 import '../../widgets/particles/particles.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
-import '../../core/constants/app_assets.dart';
 
-/// Play screen — the core gameplay loop
+/// Play screen — The Core Gameplay Loop of BLINK
+/// Powered by:
+/// - Tactile 2.5D Animated Game Objects (Star, Moon, Gem, Orb, Cube, etc.)
+/// - Dimensional Arena Surface with depth gradient, perspective rim, and atmospheric motes
+/// - Staggered materialization spawn sequences
+/// - Signature World Shift transition with camera push & circular energy wave
+/// - Physics-based answer buttons with satisfying tactile feedback
 class PlayScreen extends ConsumerStatefulWidget {
   const PlayScreen({super.key});
 
@@ -36,18 +44,29 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
   double _timeLeft = 0;
   DateTime? _answerStartTime;
 
-  // Animations
+  // Animation Controllers
   late AnimationController _countdownController;
   late AnimationController _sceneController;
   late AnimationController _feedbackController;
   late AnimationController _shakeController;
   late Animation<double> _shakeAnimation;
+  late AnimationController _shiftController;
+  late Animation<double> _shiftScaleAnimation;
+  late Animation<double> _shiftWaveAnimation;
 
   int _countdownValue = 3;
   bool _showPerfect = false;
   bool _showEnergyRing = false;
   int? _selectedAnswer;
   bool? _lastAnswerCorrect;
+
+  // 2.5D Spawning & World Shift flags
+  bool _isSpawning = false;
+  bool _isWorldShifting = false;
+
+  // Hidden developer debug mode (activated by tapping ROUND 5 times)
+  int _debugTapCount = 0;
+  bool _showDebug = false;
 
   @override
   void initState() {
@@ -60,7 +79,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
     _sceneController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 450),
     );
 
     _feedbackController = AnimationController(
@@ -76,6 +95,21 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       CurvedAnimation(parent: _shakeController, curve: Curves.elasticIn),
     );
 
+    // World Shift signature camera push & energy wave
+    _shiftController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+
+    _shiftScaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.07).chain(CurveTween(curve: Curves.easeOutCubic)), weight: 45),
+      TweenSequenceItem(tween: Tween(begin: 1.07, end: 1.0).chain(CurveTween(curve: Curves.easeInCubic)), weight: 55),
+    ]).animate(_shiftController);
+
+    _shiftWaveAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _shiftController, curve: Curves.easeOutQuad),
+    );
+
     _startRound();
   }
 
@@ -86,6 +120,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
     _sceneController.dispose();
     _feedbackController.dispose();
     _shakeController.dispose();
+    _shiftController.dispose();
     super.dispose();
   }
 
@@ -102,30 +137,43 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       _showPerfect = false;
       _showEnergyRing = false;
       _countdownValue = 3;
+      _isSpawning = false;
+      _isWorldShifting = false;
     });
 
     _runIntroSequence();
   }
 
   void _runIntroSequence() async {
-    // Show mode name + instruction briefly
+    // Mode title & instruction introduction
     await Future.delayed(const Duration(milliseconds: 800));
 
     // Countdown 3-2-1
+    if (!mounted) return;
     setState(() => _phase = _GamePhase.countdown);
     for (int i = 3; i >= 1; i--) {
+      if (!mounted) return;
       setState(() => _countdownValue = i);
       _countdownController.forward(from: 0);
-      await Future.delayed(const Duration(milliseconds: 700));
+      triggerHaptic(ref, HapticService.lightTap);
+      await Future.delayed(const Duration(milliseconds: 650));
     }
 
-    // Show scene
-    setState(() => _phase = _GamePhase.observe);
+    // Materialize into Observe Phase
+    if (!mounted) return;
+    setState(() {
+      _phase = _GamePhase.observe;
+      _isSpawning = true;
+    });
     _sceneController.forward(from: 0);
     _timeLeft = _challenge!.observeTime;
 
     // Timer for observation
     _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
         _timeLeft -= 0.05;
         if (_timeLeft <= 0) {
@@ -136,14 +184,28 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
     });
   }
 
-  void _onObserveComplete() {
+  void _onObserveComplete() async {
     if (_challenge!.modifiedScene != null) {
-      // Show modified scene
-      setState(() => _phase = _GamePhase.modified);
-      _sceneController.forward(from: 0);
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (mounted) _showAnswerPhase();
+      // Trigger Signature World Shift transition
+      setState(() => _isWorldShifting = true);
+      _shiftController.forward(from: 0.0);
+      triggerHaptic(ref, HapticService.mediumTap);
+
+      // Brief shift pause
+      await Future.delayed(const Duration(milliseconds: 350));
+      if (!mounted) return;
+
+      setState(() {
+        _phase = _GamePhase.modified;
+        _isSpawning = false;
       });
+
+      // Allow player to notice modification
+      await Future.delayed(const Duration(milliseconds: 1400));
+      if (mounted) {
+        setState(() => _isWorldShifting = false);
+        _showAnswerPhase();
+      }
     } else {
       _showAnswerPhase();
     }
@@ -157,6 +219,10 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
     });
 
     _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       setState(() {
         _timeLeft -= 0.05;
         if (_timeLeft <= 0) {
@@ -190,7 +256,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       );
       _totalXp += result.xpEarned;
       _totalGems += result.gemsEarned;
-      _score += 100 + (_combo * 10);
+      _score += 100 + (_combo * 15);
 
       triggerHaptic(ref, HapticService.correctAnswer);
 
@@ -204,7 +270,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
       _feedbackController.forward(from: 0);
 
-      Future.delayed(const Duration(milliseconds: 1500), () {
+      Future.delayed(const Duration(milliseconds: 1400), () {
         if (mounted) {
           if (_round >= 5) {
             _goToResult();
@@ -225,7 +291,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       triggerHaptic(ref, HapticService.wrongAnswer);
       _shakeController.forward(from: 0);
 
-      Future.delayed(const Duration(milliseconds: 2000), () {
+      Future.delayed(const Duration(milliseconds: 1800), () {
         if (mounted) {
           if (_round >= 5) {
             _goToResult();
@@ -253,13 +319,25 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
     });
   }
 
+  void _handleRoundTapForDebug() {
+    _debugTapCount++;
+    if (_debugTapCount >= 5) {
+      setState(() => _showDebug = !_showDebug);
+      _debugTapCount = 0;
+      triggerHaptic(ref, HapticService.mediumTap);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
-          const StarField(starCount: 30),
+          // Cosmic Starfield background
+          const StarField(starCount: 45),
+          const FloatingParticles(count: 10, color: AppColors.primaryLight),
+
           SafeArea(
             child: Column(
               children: [
@@ -268,7 +346,23 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
               ],
             ),
           ),
-          // Energy ring overlay
+
+          // World Shift Energy Wave Overlay
+          if (_isWorldShifting)
+            AnimatedBuilder(
+              animation: _shiftWaveAnimation,
+              builder: (context, _) {
+                final progress = _shiftWaveAnimation.value;
+                return IgnorePointer(
+                  child: CustomPaint(
+                    painter: _WorldShiftWavePainter(progress),
+                    size: Size.infinite,
+                  ),
+                );
+              },
+            ),
+
+          // Perfect Energy Ring Overlay
           if (_showEnergyRing)
             Positioned.fill(
               child: EnergyRing(
@@ -276,12 +370,13 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                 onComplete: () => setState(() => _showEnergyRing = false),
               ),
             ),
-          // Perfect text overlay
+
+          // Perfect Celebration Text Overlay
           if (_showPerfect)
             Center(
               child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0.5, end: 1.2),
-                duration: const Duration(milliseconds: 600),
+                tween: Tween(begin: 0.4, end: 1.15),
+                duration: const Duration(milliseconds: 550),
                 curve: Curves.elasticOut,
                 builder: (context, scale, child) {
                   return Transform.scale(
@@ -295,8 +390,12 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                         letterSpacing: 6,
                         shadows: [
                           Shadow(
-                            color: AppColors.cyan.withValues(alpha: 0.6),
-                            blurRadius: 30,
+                            color: AppColors.cyan.withValues(alpha: 0.8),
+                            blurRadius: 32,
+                          ),
+                          Shadow(
+                            color: AppColors.primary.withValues(alpha: 0.5),
+                            blurRadius: 60,
                           ),
                         ],
                       ),
@@ -320,7 +419,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
         children: [
-          // Back button
+          // Close button
           GestureDetector(
             onTap: () => context.pop(),
             child: Container(
@@ -335,17 +434,31 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
             ),
           ),
           const Spacer(),
-          // Round indicator
-          Text(
-            'ROUND $_round / 5',
-            style: GoogleFonts.outfit(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textMuted,
-              letterSpacing: 1.5,
+
+          // Round indicator (tappable 5 times to toggle hidden debug mode)
+          GestureDetector(
+            onTap: _handleRoundTapForDebug,
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: _showDebug ? AppColors.primary.withValues(alpha: 0.25) : Colors.transparent,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _showDebug ? 'DEBUG ROUND $_round / 5' : 'ROUND $_round / 5',
+                style: GoogleFonts.outfit(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: _showDebug ? AppColors.cyan : AppColors.textMuted,
+                  letterSpacing: 1.5,
+                ),
+              ),
             ),
           ),
+
           const Spacer(),
+
           // Combo indicator
           if (_combo > 1)
             Container(
@@ -353,17 +466,23 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.gold.withValues(alpha: 0.2),
-                    AppColors.amber.withValues(alpha: 0.1),
+                    AppColors.gold.withValues(alpha: 0.25),
+                    AppColors.amber.withValues(alpha: 0.12),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                  ),
+                ],
               ),
               child: Text(
                 'x$_combo',
                 style: GoogleFonts.outfit(
-                  fontSize: 16,
+                  fontSize: 15,
                   fontWeight: FontWeight.w900,
                   color: AppColors.gold,
                 ),
@@ -397,21 +516,35 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            _challenge!.modeName,
-            style: GoogleFonts.outfit(
-              fontSize: 28,
-              fontWeight: FontWeight.w900,
-              color: AppColors.cyan,
-              letterSpacing: 3,
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              _challenge!.modeName.toUpperCase(),
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.cyan,
+                letterSpacing: 3,
+              ),
             ),
           ),
-          const SizedBox(height: 12),
-          Text(
-            _challenge!.instruction,
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              color: AppColors.textSecondary,
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Text(
+              _challenge!.instruction,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+                height: 1.3,
+              ),
             ),
           ),
         ],
@@ -424,8 +557,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       child: AnimatedBuilder(
         animation: _countdownController,
         builder: (context, _) {
-          final scale = 1.0 + (1.0 - _countdownController.value) * 0.5;
-          final opacity = 1.0 - _countdownController.value * 0.3;
+          final scale = 1.0 + (1.0 - _countdownController.value) * 0.45;
+          final opacity = (1.0 - _countdownController.value * 0.3).clamp(0.0, 1.0);
           return Transform.scale(
             scale: scale,
             child: Opacity(
@@ -433,13 +566,13 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
               child: Text(
                 '$_countdownValue',
                 style: GoogleFonts.outfit(
-                  fontSize: 72,
+                  fontSize: 76,
                   fontWeight: FontWeight.w900,
                   color: AppColors.cyan,
                   shadows: [
                     Shadow(
-                      color: AppColors.cyan.withValues(alpha: 0.5),
-                      blurRadius: 20,
+                      color: AppColors.cyan.withValues(alpha: 0.6),
+                      blurRadius: 28,
                     ),
                   ],
                 ),
@@ -453,134 +586,171 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
   Widget _buildObservePhase(bool showModified) {
     if (_challenge == null) return const SizedBox();
-    final scene = showModified ? (_challenge!.modifiedScene ?? _challenge!.originalScene) : _challenge!.originalScene;
+    final scene = showModified
+        ? (_challenge!.modifiedScene ?? _challenge!.originalScene)
+        : _challenge!.originalScene;
+
+    final maxTime = _challenge!.observeTime;
+    final progress = maxTime > 0 ? (_timeLeft / maxTime).clamp(0.0, 1.0) : 0.0;
 
     return Column(
       children: [
-        // Timer bar
+        // ──── HUD / TIMER ────
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: _buildTimerBar(),
-        ),
-        const SizedBox(height: 8),
-        if (showModified)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              'What changed?',
-              style: GoogleFonts.outfit(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.gold,
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Mode State Tag
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: showModified
+                      ? AppColors.gold.withValues(alpha: 0.15)
+                      : AppColors.cyan.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: showModified
+                        ? AppColors.gold.withValues(alpha: 0.4)
+                        : AppColors.cyan.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      showModified ? Icons.auto_awesome_rounded : Icons.visibility_rounded,
+                      size: 14,
+                      color: showModified ? AppColors.gold : AppColors.cyan,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      showModified ? 'REALITY SHIFTED' : 'OBSERVE',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: showModified ? AppColors.gold : AppColors.cyan,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+
+              // Radial Energy Timer (during observe phase)
+              if (!showModified)
+                RadialEnergyTimer(
+                  progress: progress,
+                  timeLeft: _timeLeft,
+                  size: 48,
+                )
+              else
+                Text(
+                  'What changed?',
+                  style: GoogleFonts.outfit(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.gold,
+                  ),
+                ),
+            ],
           ),
-        // Scene
+        ),
+
+        // ──── 2.5D ARENA SCENE ────
         Expanded(
           child: AnimatedBuilder(
-            animation: _sceneController,
+            animation: Listenable.merge([_sceneController, _shiftScaleAnimation]),
             builder: (context, child) {
+              final sceneScale = 0.92 + (_sceneController.value * 0.08);
+              final cameraZoom = _isWorldShifting ? _shiftScaleAnimation.value : 1.0;
+
               return Opacity(
-                opacity: _sceneController.value,
+                opacity: _sceneController.value.clamp(0.0, 1.0),
                 child: Transform.scale(
-                  scale: 0.9 + _sceneController.value * 0.1,
+                  scale: sceneScale * cameraZoom,
                   child: child,
                 ),
               );
             },
-            child: _buildScene(scene),
+            child: ArenaSurface(
+              enableBreathing: !showModified,
+              child: _buildArenaScene(scene),
+            ),
           ),
         ),
+
+        const SizedBox(height: 12),
       ],
     );
   }
 
-  Widget _buildScene(List<GameObject> objects) {
+  Widget _buildArenaScene(List<GameObject> objects) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final arenaW = constraints.maxWidth;
+        final arenaH = constraints.maxHeight;
+
         return Stack(
+          clipBehavior: Clip.none,
           children: [
-            // Scene background
-            Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.glassBorder),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    blurRadius: 20,
-                    spreadRadius: -5,
-                  ),
-                ],
-              ),
-            ),
-            // Objects
-            ...objects.map((obj) {
-              final x = 16 + obj.position.dx * (constraints.maxWidth - 32);
-              final y = 16 + obj.position.dy * (constraints.maxHeight - 32);
-              return Positioned(
-                left: x - 25,
-                top: y - 25,
-                child: _buildGameObject(obj),
+            ...objects.asMap().entries.map((entry) {
+              final index = entry.key;
+              final obj = entry.value;
+
+              // Normalized coordinate to pixel conversion
+              // Keep within generous arena bounds
+              final posX = obj.position.dx * (arenaW - 70) + 10;
+              final posY = obj.position.dy * (arenaH - 78) + 12;
+
+              return AnimatedPositioned(
+                key: ValueKey(obj.id),
+                duration: const Duration(milliseconds: 650),
+                curve: Curves.easeOutBack,
+                left: posX,
+                top: posY,
+                child: TactileObject(
+                  gameObject: obj,
+                  baseSize: 56.0,
+                  spawnIndex: index,
+                  isSpawning: _isSpawning,
+                  showDebugLabel: _showDebug,
+                  onTap: () {
+                    // Tactile tap feedback on arena object
+                  },
+                ),
               );
             }),
+
+            // Debug overlay
+            if (_showDebug)
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Diff: ${_challenge?.difficulty} | Mode: ${_challenge?.mode.name}\nAns: ${_challenge?.correctAnswer}',
+                    style: const TextStyle(color: Colors.greenAccent, fontSize: 10, fontFamily: 'monospace'),
+                  ),
+                ),
+              ),
           ],
         );
       },
     );
   }
 
-  Widget _buildGameObject(GameObject obj) {
-    final size = 52.0 * obj.size;
-    String? assetPath;
-    if (obj.type == GameObjectType.orb) {
-      assetPath = AppAssets.gameOrb;
-    } else if (obj.type == GameObjectType.cube) {
-      assetPath = AppAssets.gameCube;
-    } else if (obj.type == GameObjectType.crystal) {
-      assetPath = AppAssets.shiftGem;
-    }
-
-    if (assetPath != null) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: obj.type == GameObjectType.orb ? BoxShape.circle : BoxShape.rectangle,
-          borderRadius: obj.type == GameObjectType.cube ? BorderRadius.circular(10) : null,
-          boxShadow: [
-            BoxShadow(
-              color: obj.color.withValues(alpha: 0.5),
-              blurRadius: 16,
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(obj.type == GameObjectType.cube ? 10 : size / 2),
-          child: Image.asset(
-            assetPath,
-            fit: BoxFit.contain,
-            color: obj.color.withValues(alpha: 0.35),
-            colorBlendMode: BlendMode.color,
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _GameObjectPainter(obj),
-      ),
-    );
-  }
-
   Widget _buildAnswerPhase() {
     if (_challenge == null) return const SizedBox();
+
+    final maxTime = _challenge!.answerTime;
+    final progress = maxTime > 0 ? (_timeLeft / maxTime).clamp(0.0, 1.0) : 0.0;
+    final isLow = progress < 0.25;
 
     return AnimatedBuilder(
       animation: _shakeAnimation,
@@ -592,255 +762,270 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
         );
       },
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         child: Column(
           children: [
-            // Timer bar
-            _buildTimerBar(),
-            const SizedBox(height: 24),
-            // Question
-            Text(
-              _challenge!.question,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const Spacer(),
-            // Answer buttons
-            ..._challenge!.answers.asMap().entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildAnswerButton(entry.key, entry.value),
-              );
-            }),
-            const Spacer(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAnswerButton(int index, String text) {
-    final isSelected = _selectedAnswer == index;
-    final isCorrect = index == _challenge!.correctAnswerIndex;
-    final showResult = _selectedAnswer != null;
-
-    Color bgColor = AppColors.surfaceLight;
-    Color borderColor = AppColors.glassBorder;
-    Color textColor = AppColors.textPrimary;
-
-    if (showResult) {
-      if (isCorrect) {
-        bgColor = AppColors.success.withValues(alpha: 0.15);
-        borderColor = AppColors.success;
-        textColor = AppColors.success;
-      } else if (isSelected && !isCorrect) {
-        bgColor = AppColors.error.withValues(alpha: 0.15);
-        borderColor = AppColors.error;
-        textColor = AppColors.error;
-      }
-    }
-
-    return GestureDetector(
-      onTap: () => _onAnswerSelected(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor, width: isSelected ? 2 : 1),
-          boxShadow: isSelected && isCorrect
-              ? [BoxShadow(color: AppColors.success.withValues(alpha: 0.3), blurRadius: 12)]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                text,
-                style: GoogleFonts.outfit(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
+            // Timer Bar
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 5,
+                backgroundColor: AppColors.surfaceLight,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isLow ? AppColors.error : AppColors.cyan,
                 ),
               ),
             ),
-            if (showResult && isCorrect)
-              Icon(Icons.check_circle_rounded, color: AppColors.success, size: 22),
-            if (showResult && isSelected && !isCorrect)
-              Icon(Icons.cancel_rounded, color: AppColors.error, size: 22),
+            const SizedBox(height: 24),
+
+            // Question Box
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.glassBorder),
+              ),
+              child: Text(
+                _challenge!.question,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 21,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                  height: 1.25,
+                ),
+              ),
+            ),
+
+            const Spacer(),
+
+            // Tactile Answer Buttons
+            ..._challenge!.answers.asMap().entries.map((entry) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _TactileAnswerButton(
+                  index: entry.key,
+                  text: entry.value,
+                  isSelected: _selectedAnswer == entry.key,
+                  isCorrect: entry.key == _challenge!.correctAnswerIndex,
+                  showResult: _selectedAnswer != null,
+                  onTap: () => _onAnswerSelected(entry.key),
+                ),
+              );
+            }),
+
+            const Spacer(),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimerBar() {
-    final maxTime = _phase == _GamePhase.observe
-        ? _challenge!.observeTime
-        : _challenge!.answerTime;
-    final progress = maxTime > 0 ? (_timeLeft / maxTime).clamp(0.0, 1.0) : 0.0;
-    final isLow = progress < 0.25;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(3),
-      child: LinearProgressIndicator(
-        value: progress,
-        minHeight: 4,
-        backgroundColor: AppColors.surfaceLight,
-        valueColor: AlwaysStoppedAnimation<Color>(
-          isLow ? AppColors.error : AppColors.cyan,
         ),
       ),
     );
   }
 }
 
-// ── Game object painter ──
-class _GameObjectPainter extends CustomPainter {
-  final GameObject obj;
-  _GameObjectPainter(this.obj);
+/// Tactile, juicy answer button with spring-press physics and crisp result states
+class _TactileAnswerButton extends StatefulWidget {
+  final int index;
+  final String text;
+  final bool isSelected;
+  final bool isCorrect;
+  final bool showResult;
+  final VoidCallback onTap;
+
+  const _TactileAnswerButton({
+    required this.index,
+    required this.text,
+    required this.isSelected,
+    required this.isCorrect,
+    required this.showResult,
+    required this.onTap,
+  });
+
+  @override
+  State<_TactileAnswerButton> createState() => _TactileAnswerButtonState();
+}
+
+class _TactileAnswerButtonState extends State<_TactileAnswerButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pressController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 140),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Color bgColor = AppColors.surfaceLight;
+    Color borderColor = AppColors.glassBorder;
+    Color textColor = AppColors.textPrimary;
+    List<BoxShadow>? shadows = [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.25),
+        blurRadius: 8,
+        offset: const Offset(0, 3),
+      ),
+    ];
+
+    if (widget.showResult) {
+      if (widget.isCorrect) {
+        bgColor = AppColors.success.withValues(alpha: 0.18);
+        borderColor = AppColors.success;
+        textColor = AppColors.success;
+        shadows = [
+          BoxShadow(
+            color: AppColors.success.withValues(alpha: 0.4),
+            blurRadius: 16,
+            spreadRadius: 1,
+          ),
+        ];
+      } else if (widget.isSelected && !widget.isCorrect) {
+        bgColor = AppColors.error.withValues(alpha: 0.18);
+        borderColor = AppColors.error;
+        textColor = AppColors.error;
+        shadows = [
+          BoxShadow(
+            color: AppColors.error.withValues(alpha: 0.35),
+            blurRadius: 12,
+          ),
+        ];
+      }
+    }
+
+    return GestureDetector(
+      onTapDown: (_) => _pressController.forward(),
+      onTapUp: (_) {
+        _pressController.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _pressController.reverse(),
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: child,
+          );
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 22),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: borderColor,
+              width: widget.isSelected ? 2.0 : 1.2,
+            ),
+            boxShadow: shadows,
+          ),
+          child: Row(
+            children: [
+              // Answer Index badge
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.surface,
+                  border: Border.all(color: borderColor),
+                ),
+                child: Center(
+                  child: Text(
+                    String.fromCharCode(65 + widget.index),
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Answer text
+              Expanded(
+                child: Text(
+                  widget.text,
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
+                ),
+              ),
+
+              // Result icon
+              if (widget.showResult && widget.isCorrect)
+                const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 22),
+              if (widget.showResult && widget.isSelected && !widget.isCorrect)
+                const Icon(Icons.cancel_rounded, color: AppColors.error, size: 22),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Painter for the Signature World Shift Energy Wave
+class _WorldShiftWavePainter extends CustomPainter {
+  final double progress; // 0.0 -> 1.0
+  _WorldShiftWavePainter(this.progress);
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width * 0.4;
-    final paint = Paint()..color = obj.color;
-    final glowPaint = Paint()
-      ..color = obj.color.withValues(alpha: 0.3)
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * 0.4);
+    final maxRadius = size.longestSide * 0.75;
+    final radius = maxRadius * progress;
+    final opacity = (1.0 - progress).clamp(0.0, 1.0);
 
-    // Draw glow
-    canvas.drawCircle(center, radius * 1.2, glowPaint);
+    // Expanding Cyan / Violet Energy Wavefront
+    final wavePaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          Colors.transparent,
+          AppColors.cyan.withValues(alpha: 0.5 * opacity),
+          AppColors.primary.withValues(alpha: 0.7 * opacity),
+          Colors.white.withValues(alpha: 0.8 * opacity),
+          Colors.transparent,
+        ],
+        stops: const [0.75, 0.88, 0.95, 0.98, 1.0],
+      ).createShader(Rect.fromCircle(center: center, radius: radius))
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
-    // Draw shape based on type
-    switch (obj.type) {
-      case GameObjectType.orb:
-        final gradient = RadialGradient(
-          colors: [obj.color, obj.color.withValues(alpha: 0.6)],
-        ).createShader(Rect.fromCircle(center: center, radius: radius));
-        canvas.drawCircle(center, radius, Paint()..shader = gradient);
-        // Highlight
-        canvas.drawCircle(
-          center + Offset(-radius * 0.3, -radius * 0.3),
-          radius * 0.2,
-          Paint()..color = Colors.white.withValues(alpha: 0.5),
-        );
-        break;
+    canvas.drawCircle(center, radius, wavePaint);
 
-      case GameObjectType.crystal:
-      case GameObjectType.gem:
-        final path = Path();
-        path.moveTo(center.dx, center.dy - radius);
-        path.lineTo(center.dx + radius * 0.7, center.dy);
-        path.lineTo(center.dx, center.dy + radius);
-        path.lineTo(center.dx - radius * 0.7, center.dy);
-        path.close();
-        canvas.drawPath(path, paint);
-        break;
-
-      case GameObjectType.cube:
-        final rect = Rect.fromCenter(center: center, width: radius * 1.6, height: radius * 1.6);
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(rect, const Radius.circular(4)),
-          paint,
-        );
-        break;
-
-      case GameObjectType.triangle:
-        final path = Path();
-        path.moveTo(center.dx, center.dy - radius);
-        path.lineTo(center.dx + radius, center.dy + radius * 0.7);
-        path.lineTo(center.dx - radius, center.dy + radius * 0.7);
-        path.close();
-        canvas.drawPath(path, paint);
-        break;
-
-      case GameObjectType.star:
-        _drawStar(canvas, center, radius, 5, paint);
-        break;
-
-      case GameObjectType.moon:
-        canvas.drawCircle(center, radius, paint);
-        canvas.drawCircle(
-          center + Offset(radius * 0.4, -radius * 0.2),
-          radius * 0.7,
-          Paint()..color = AppColors.surface,
-        );
-        break;
-
-      case GameObjectType.ring:
-        canvas.drawCircle(
-          center,
-          radius,
-          Paint()
-            ..color = obj.color
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = radius * 0.3,
-        );
-        break;
-
-      case GameObjectType.leaf:
-        final path = Path();
-        path.moveTo(center.dx, center.dy - radius);
-        path.quadraticBezierTo(center.dx + radius * 1.2, center.dy, center.dx, center.dy + radius);
-        path.quadraticBezierTo(center.dx - radius * 1.2, center.dy, center.dx, center.dy - radius);
-        path.close();
-        canvas.drawPath(path, paint);
-        break;
-
-      case GameObjectType.bolt:
-        final path = Path();
-        path.moveTo(center.dx, center.dy - radius);
-        path.lineTo(center.dx + radius * 0.5, center.dy - radius * 0.1);
-        path.lineTo(center.dx + radius * 0.1, center.dy + radius * 0.1);
-        path.lineTo(center.dx + radius * 0.6, center.dy + radius);
-        path.lineTo(center.dx - radius * 0.1, center.dy + radius * 0.2);
-        path.lineTo(center.dx - radius * 0.3, center.dy - radius * 0.1);
-        path.close();
-        canvas.drawPath(path, paint);
-        break;
+    // Screen flash at peak
+    if (progress < 0.3) {
+      final flashOpacity = (1.0 - (progress / 0.3)) * 0.15;
+      canvas.drawRect(
+        Offset.zero & size,
+        Paint()..color = Colors.white.withValues(alpha: flashOpacity),
+      );
     }
-
-    // Draw label
-    final textPainter = TextPainter(
-      text: TextSpan(
-        text: obj.type.label,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.8),
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    textPainter.paint(canvas, Offset(center.dx - textPainter.width / 2, center.dy + radius + 4));
-  }
-
-  void _drawStar(Canvas canvas, Offset center, double radius, int points, Paint paint) {
-    final path = Path();
-    final angleStep = pi / points;
-    for (int i = 0; i < points * 2; i++) {
-      final r = i.isEven ? radius : radius * 0.45;
-      final angle = -pi / 2 + i * angleStep;
-      final point = Offset(center.dx + r * cos(angle), center.dy + r * sin(angle));
-      if (i == 0) {
-        path.moveTo(point.dx, point.dy);
-      } else {
-        path.lineTo(point.dx, point.dy);
-      }
-    }
-    path.close();
-    canvas.drawPath(path, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _GameObjectPainter old) => false;
+  bool shouldRepaint(covariant _WorldShiftWavePainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
 }
 
 enum _GamePhase {
