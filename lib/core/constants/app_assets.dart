@@ -9,6 +9,11 @@ class AppAssets {
   // Characters (Nova)
   static const String novaIdle = 'assets/images/characters/nova_idle.png';
   static const String novaHappy = 'assets/images/characters/nova_happy.png';
+  static const String novaTorso = 'assets/images/characters/nova_torso.png';
+  static const String novaArmLeft = 'assets/images/characters/nova_arm_left.png';
+  static const String novaArmRight = 'assets/images/characters/nova_arm_right.png';
+  static const String novaLegLeft = 'assets/images/characters/nova_leg_left.png';
+  static const String novaLegRight = 'assets/images/characters/nova_leg_right.png';
 
   // World
   static const String floatingIsland = 'assets/images/world/floating_island.png';

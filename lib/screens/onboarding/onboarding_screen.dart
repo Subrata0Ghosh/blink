@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../widgets/buttons/tactile_button.dart';
+import '../../widgets/characters/tactile_nova_companion.dart';
 import '../../widgets/particles/particles.dart';
 import '../../services/game_state_service.dart';
 
@@ -85,62 +87,115 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               ],
             ),
           ),
-          // Page indicators + navigation
+          // ──── 3D PAGE INDICATORS & TACTILE NAVIGATION ────
           Positioned(
-            bottom: 50,
+            bottom: 40,
             left: 0,
             right: 0,
             child: Column(
               children: [
-                // Page dots
+                // 3D Pill Dots
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: List.generate(4, (i) {
+                    final isActive = _currentPage == i;
                     return AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      width: _currentPage == i ? 28 : 8,
-                      height: 8,
+                      margin: const EdgeInsets.symmetric(horizontal: 5),
+                      width: isActive ? 34 : 10,
+                      height: 10,
                       decoration: BoxDecoration(
-                        color: _currentPage == i
-                            ? AppColors.cyan
-                            : AppColors.textMuted.withValues(alpha: 0.3),
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(5),
+                        gradient: isActive
+                            ? const LinearGradient(
+                                colors: [AppColors.cosmicCyanLight, AppColors.cosmicCyanDark],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              )
+                            : null,
+                        color: isActive ? null : const Color(0xFF161F36),
+                        border: Border.all(
+                          color: isActive
+                              ? Colors.white.withValues(alpha: 0.8)
+                              : Colors.white.withValues(alpha: 0.12),
+                          width: 1.0,
+                        ),
+                        boxShadow: [
+                          if (isActive)
+                            BoxShadow(
+                              color: AppColors.cyan.withValues(alpha: 0.6),
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            blurRadius: 3,
+                            offset: const Offset(0, 1.5),
+                          ),
+                        ],
                       ),
                     );
                   }),
                 ),
-                const SizedBox(height: 32),
-                // Button
+                const SizedBox(height: 28),
+                // 3D Candy Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40),
+                  padding: const EdgeInsets.symmetric(horizontal: 36),
                   child: _currentPage < 3
-                      ? _buildButton('NEXT', _nextPage)
-                      : _buildButton('PLAY NOW', _completeOnboarding, isPrimary: true),
+                      ? TactileButton.cosmic(
+                          label: 'NEXT',
+                          fontSize: 18,
+                          height: 56,
+                          onTap: _nextPage,
+                        )
+                      : TactileButton.cosmic(
+                          label: 'START JOURNEY',
+                          fontSize: 18,
+                          height: 56,
+                          onTap: _completeOnboarding,
+                        ),
                 ),
               ],
             ),
           ),
-          // Skip button
+          // 3D Skip button
           if (_currentPage < 3)
             Positioned(
-              top: MediaQuery.of(context).padding.top + 16,
+              top: MediaQuery.of(context).padding.top + 12,
               right: 20,
-              child: TextButton(
-                onPressed: () {
+              child: GestureDetector(
+                onTap: () {
                   _pageController.animateToPage(
                     3,
                     duration: const Duration(milliseconds: 500),
                     curve: Curves.easeOutCubic,
                   );
                 },
-                child: Text(
-                  'SKIP',
-                  style: GoogleFonts.outfit(
-                    color: AppColors.textMuted,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.5,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 1.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    'SKIP',
+                    style: GoogleFonts.outfit(
+                      color: AppColors.textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -152,63 +207,150 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildIntroPage(_OnboardingPage page) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      padding: const EdgeInsets.symmetric(horizontal: 36),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Glowing artwork container
-          Container(
-            width: 140,
-            height: 140,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: page.gradientColors[0].withValues(alpha: 0.4),
-                  blurRadius: 40,
-                  spreadRadius: 4,
+          // 3D Floating Astral Pedestal Cradling Artwork
+          SizedBox(
+            width: 170,
+            height: 170,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Ground aura shadow
+                Positioned(
+                  bottom: 6,
+                  child: Container(
+                    width: 140,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: page.gradientColors[0].withValues(alpha: 0.45),
+                          blurRadius: 36,
+                          spreadRadius: 6,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-                BoxShadow(
-                  color: page.gradientColors[1].withValues(alpha: 0.25),
-                  blurRadius: 60,
-                  spreadRadius: 8,
+
+                // 3D Beveled Pedestal Ring
+                Container(
+                  width: 148,
+                  height: 148,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF070B19),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.65),
+                      width: 2.0,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: page.gradientColors[0].withValues(alpha: 0.45),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        blurRadius: 16,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      alignment: Alignment.center,
+                      children: [
+                        if (page.assetPath != null)
+                          Image.asset(
+                            page.assetPath!,
+                            fit: BoxFit.cover,
+                          )
+                        else
+                          Center(
+                            child: Icon(
+                              page.icon,
+                              size: 58,
+                              color: page.gradientColors[0],
+                            ),
+                          ),
+
+                        // Curved top glass specular sheen along the circular perimeter
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 64,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.38),
+                                  Colors.white.withValues(alpha: 0.0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Bottom inner sphere shadow for 3D depth
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: 40,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.45),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
-            child: page.assetPath != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(70),
-                    child: Image.asset(
-                      page.assetPath!,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: page.gradientColors.map((c) => c.withValues(alpha: 0.15)).toList(),
-                      ),
-                    ),
-                    child: Icon(
-                      page.icon,
-                      size: 48,
-                      color: page.gradientColors[0],
-                    ),
-                  ),
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 44),
+          // 3D Embossed Title
           Text(
             page.title,
             textAlign: TextAlign.center,
             style: GoogleFonts.outfit(
               fontSize: 32,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-              letterSpacing: -0.5,
+              color: Colors.white,
+              letterSpacing: -0.3,
+              shadows: [
+                Shadow(
+                  color: page.gradientColors[0].withValues(alpha: 0.8),
+                  offset: const Offset(0, 2),
+                  blurRadius: 2,
+                ),
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  offset: const Offset(0, 4),
+                  blurRadius: 8,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Text(
             page.subtitle,
             textAlign: TextAlign.center,
@@ -216,9 +358,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               fontSize: 16,
               fontWeight: FontWeight.w400,
               color: AppColors.textSecondary,
-              height: 1.6,
+              height: 1.55,
             ),
           ),
+          const SizedBox(height: 50),
         ],
       ),
     );
@@ -226,123 +369,111 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _buildNamePage() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40),
+      padding: const EdgeInsets.symmetric(horizontal: 36),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Nova Mascot Artwork
-          Container(
-            width: 130,
-            height: 130,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cyan.withValues(alpha: 0.5),
-                  blurRadius: 36,
-                  spreadRadius: 6,
-                ),
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.4),
-                  blurRadius: 60,
-                  spreadRadius: 10,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(65),
-              child: Image.asset(
-                AppAssets.novaIdle,
-                fit: BoxFit.cover,
-              ),
+          // ──── INTERACTIVE 3D NOVA COMPANION ON HOLOGRAM BASE ────
+          const Center(
+            child: TactileNovaCompanion(
+              size: 135,
+              showHologramRing: true,
+              enableDialogue: true,
             ),
           ),
-          const SizedBox(height: 40),
+          const SizedBox(height: 24),
           Text(
             'What\'s your name?',
             style: GoogleFonts.outfit(
               fontSize: 28,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: Colors.white,
+              shadows: [
+                const Shadow(
+                  color: Color(0xFF007A99),
+                  offset: Offset(0, 2),
+                  blurRadius: 2,
+                ),
+                Shadow(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  offset: const Offset(0, 4),
+                  blurRadius: 6,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            'Choose a name for your observer.',
+            'Choose a name for your cosmic observer.',
             style: GoogleFonts.outfit(
               fontSize: 14,
               color: AppColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 28),
+          // 3D Recessed Console Entry Slot
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
             decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.glassBorder),
-            ),
-            child: TextField(
-              controller: _nameController,
-              style: GoogleFonts.outfit(
-                fontSize: 18,
-                color: AppColors.textPrimary,
+              color: const Color(0xFF0C1122),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: AppColors.cyan.withValues(alpha: 0.6),
+                width: 1.5,
               ),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                hintText: 'Observer',
-                hintStyle: GoogleFonts.outfit(
-                  fontSize: 18,
-                  color: AppColors.textMuted,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.7),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-              ),
+                BoxShadow(
+                  color: AppColors.cyan.withValues(alpha: 0.2),
+                  blurRadius: 16,
+                  spreadRadius: 1,
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 120), // Space for button at bottom
-        ],
-      ),
-    );
-  }
-
-  Widget _buildButton(String text, VoidCallback onTap, {bool isPrimary = false}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: double.infinity,
-        height: 56,
-        decoration: BoxDecoration(
-          gradient: isPrimary
-              ? const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark])
-              : null,
-          color: isPrimary ? null : AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(18),
-          border: isPrimary
-              ? null
-              : Border.all(color: AppColors.glassBorder),
-          boxShadow: isPrimary
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.4),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.cyan.withValues(alpha: 0.2),
+                    border: Border.all(color: AppColors.cyan.withValues(alpha: 0.5)),
                   ),
-                ]
-              : null,
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: isPrimary ? Colors.white : AppColors.textPrimary,
-              letterSpacing: 2,
+                  child: const Center(
+                    child: Icon(Icons.person_outline_rounded, color: AppColors.cyan, size: 18),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _nameController,
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                    textAlign: TextAlign.start,
+                    decoration: InputDecoration(
+                      hintText: 'Enter Observer Name',
+                      hintStyle: GoogleFonts.outfit(
+                        fontSize: 16,
+                        color: AppColors.textMuted.withValues(alpha: 0.6),
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
+          const SizedBox(height: 100), // Space for button at bottom
+        ],
       ),
     );
   }

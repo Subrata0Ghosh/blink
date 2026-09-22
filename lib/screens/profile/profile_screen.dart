@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/game_state_service.dart';
+import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/navigation/game_bottom_nav.dart';
 import '../../widgets/particles/particles.dart';
 
@@ -59,23 +60,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('CANCEL', style: TextStyle(color: AppColors.textMuted)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final newName = controller.text.trim();
-                if (newName.isNotEmpty) {
-                  ref.read(gameStateProvider.notifier).completeOnboarding(newName);
-                }
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.cyan,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('SAVE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TactileButton.dark(
+                  label: 'CANCEL',
+                  width: 95,
+                  height: 44,
+                  fontSize: 13,
+                  onTap: () => Navigator.pop(context),
+                ),
+                const SizedBox(width: 8),
+                TactileButton.cosmic(
+                  label: 'SAVE',
+                  width: 95,
+                  height: 44,
+                  fontSize: 13,
+                  onTap: () {
+                    final newName = controller.text.trim();
+                    if (newName.isNotEmpty) {
+                      ref.read(gameStateProvider.notifier).completeOnboarding(newName);
+                    }
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
             ),
           ],
         );
@@ -210,9 +219,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  GestureDetector(
+                                  TactileButton.circle(
+                                    size: 32,
+                                    faceColorTop: const Color(0xFF2C3554),
+                                    faceColorBottom: const Color(0xFF171E33),
+                                    rimColor: const Color(0xFF0C101E),
                                     onTap: () => _editNameDialog(player.displayName),
-                                    child: const Icon(Icons.edit_rounded, size: 16, color: AppColors.textMuted),
+                                    child: const Icon(Icons.edit_rounded, size: 16, color: AppColors.cyan),
                                   ),
                                 ],
                               ),

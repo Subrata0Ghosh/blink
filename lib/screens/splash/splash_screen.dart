@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,19 +59,36 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _startAnimation();
   }
 
-  void _startAnimation() async {
-    await Future.delayed(const Duration(milliseconds: 100));
-    _lightController.forward();
-    await Future.delayed(const Duration(milliseconds: 300));
-    _logoController.forward();
-    await Future.delayed(const Duration(milliseconds: 900));
-    _pulseController.forward();
-    await Future.delayed(const Duration(milliseconds: 800));
-    widget.onComplete();
+  Timer? _t1;
+  Timer? _t2;
+  Timer? _t3;
+  Timer? _t4;
+
+  void _startAnimation() {
+    _t1 = Timer(const Duration(milliseconds: 100), () {
+      if (!mounted) return;
+      _lightController.forward();
+      _t2 = Timer(const Duration(milliseconds: 300), () {
+        if (!mounted) return;
+        _logoController.forward();
+        _t3 = Timer(const Duration(milliseconds: 900), () {
+          if (!mounted) return;
+          _pulseController.forward();
+          _t4 = Timer(const Duration(milliseconds: 800), () {
+            if (!mounted) return;
+            widget.onComplete();
+          });
+        });
+      });
+    });
   }
 
   @override
   void dispose() {
+    _t1?.cancel();
+    _t2?.cancel();
+    _t3?.cancel();
+    _t4?.cancel();
     _lightController.dispose();
     _logoController.dispose();
     _pulseController.dispose();
@@ -110,7 +128,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       ),
                     ),
                     const SizedBox(height: 24),
-                    // BLINK text
+                    // 3D Embossed BLINK Typography
                     Opacity(
                       opacity: _logoFade.value,
                       child: Transform.scale(
@@ -118,17 +136,35 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         child: Text(
                           'BLINK',
                           style: GoogleFonts.outfit(
-                            fontSize: 52,
+                            fontSize: 54,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimary,
+                            color: Colors.white,
                             letterSpacing: 8,
                             shadows: [
+                              // Top highlight rim
                               Shadow(
-                                color: AppColors.primary.withValues(alpha: 0.6),
-                                blurRadius: 30,
+                                color: Colors.white.withValues(alpha: 0.8),
+                                offset: const Offset(0, -1),
+                                blurRadius: 1,
+                              ),
+                              // 3D extruded bevel edge
+                              const Shadow(
+                                color: Color(0xFF007A99),
+                                offset: Offset(0, 3),
+                                blurRadius: 2,
+                              ),
+                              const Shadow(
+                                color: Color(0xFF004455),
+                                offset: Offset(0, 5),
+                                blurRadius: 4,
+                              ),
+                              // Deep space ambient glow
+                              Shadow(
+                                color: AppColors.cyan.withValues(alpha: 0.8),
+                                blurRadius: 36,
                               ),
                               Shadow(
-                                color: AppColors.cyan.withValues(alpha: 0.3),
+                                color: AppColors.primary.withValues(alpha: 0.5),
                                 blurRadius: 60,
                               ),
                             ],
@@ -136,17 +172,28 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
                     // Tagline
                     Opacity(
                       opacity: _taglineFade.value,
-                      child: Text(
-                        'The World Changes When You Look Away',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                          color: AppColors.textSecondary.withValues(alpha: 0.7),
-                          letterSpacing: 2,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withValues(alpha: 0.4),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: AppColors.cyan.withValues(alpha: 0.25),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          'THE COSMOS SHIFTS WHEN YOU BLINK',
+                          style: GoogleFonts.outfit(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.cyanLight,
+                            letterSpacing: 2.2,
+                          ),
                         ),
                       ),
                     ),
@@ -161,38 +208,113 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Widget _buildCrystalIcon() {
-    return Container(
-      width: 120,
-      height: 120,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.cyan.withValues(alpha: 0.5),
-            blurRadius: 36,
-            spreadRadius: 6,
-          ),
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.4),
-            blurRadius: 60,
-            spreadRadius: 10,
-          ),
-        ],
-      ),
+    return SizedBox(
+      width: 130,
+      height: 130,
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // 1. Ambient pulsing aura
+          Container(
+            width: 100,
+            height: 100,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cyan.withValues(alpha: 0.6),
+                  blurRadius: 40,
+                  spreadRadius: 8,
+                ),
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.4),
+                  blurRadius: 65,
+                  spreadRadius: 12,
+                ),
+              ],
+            ),
+          ),
+
+          // 2. Custom 3D Crystal Relic Painter
           CustomPaint(
             painter: _CrystalPainter(),
-            size: const Size(120, 120),
+            size: const Size(130, 130),
           ),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: Image.asset(
-              AppAssets.blinkLogo,
-              width: 96,
-              height: 96,
-              fit: BoxFit.cover,
+
+          // 3. 3D Convex Glossy Dome with BLINK Logo
+          Container(
+            width: 88,
+            height: 88,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF060914),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.8),
+                width: 2.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.55),
+                  offset: const Offset(0, 4),
+                  blurRadius: 8,
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  offset: const Offset(0, 8),
+                  blurRadius: 14,
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Stack(
+                fit: StackFit.expand,
+                alignment: Alignment.center,
+                children: [
+                  // Full edge-to-edge logo image filling the circle seamlessly
+                  Image.asset(
+                    AppAssets.blinkLogo,
+                    fit: BoxFit.cover,
+                  ),
+                  // Curved top glass specular sheen along the dome perimeter
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: 40,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.38),
+                            Colors.white.withValues(alpha: 0.0),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Bottom inner sphere shadow for 3D depth
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: 26,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.45),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

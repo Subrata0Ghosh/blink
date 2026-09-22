@@ -17,6 +17,7 @@ class AppColors {
 
   // Secondary — Cyan / mint accents
   static const Color cyan = Color(0xFF00E5FF);
+  static const Color cyanLight = Color(0xFF66E5FF);
   static const Color cyanDark = Color(0xFF00B8D4);
   static const Color mint = Color(0xFF64FFDA);
 

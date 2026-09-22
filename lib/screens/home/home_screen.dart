@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
+import '../../widgets/characters/tactile_nova_companion.dart';
 import '../../widgets/particles/particles.dart';
 
 /// Home / Welcome Screen — BLINK Cosmic Identity
@@ -119,7 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   ),
                 ),
 
-                const Spacer(flex: 2),
+                const Spacer(),
 
                 // ──── GLOWING BLINK TITLE ────
                 AnimatedBuilder(
@@ -207,46 +208,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   ),
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 12),
 
-                // Nova companion or icon
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [
-                        AppColors.cyan.withValues(alpha: 0.15),
-                        Colors.transparent,
-                      ],
-                    ),
-                    border: Border.all(
-                      color: AppColors.cyan.withValues(alpha: 0.3),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.cyan.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      AppAssets.novaIdle,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => const Icon(
-                        Icons.visibility_rounded,
-                        color: AppColors.cyan,
-                        size: 40,
-                      ),
-                    ),
+                // ──── INTERACTIVE 3D NOVA COMPANION (No dark background, 3D behaviors) ────
+                const Center(
+                  child: TactileNovaCompanion(
+                    size: 108,
+                    showHologramRing: true,
+                    enableDialogue: true,
                   ),
                 ),
 
-                const Spacer(flex: 3),
+                const Spacer(),
 
                 // ──── BOTTOM ACTION BUTTONS ────
                 Padding(

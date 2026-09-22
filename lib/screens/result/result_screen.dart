@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
+import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/particles/particles.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
@@ -353,61 +354,21 @@ class _ResultScreenState extends ConsumerState<ResultScreen> with TickerProvider
 
                   // ── Buttons ──
                   // Next Challenge
-                  GestureDetector(
+                  TactileButton.cosmic(
+                    label: 'NEXT CHALLENGE',
+                    width: double.infinity,
+                    height: 58,
+                    fontSize: 18,
                     onTap: () => context.pushReplacement('/play'),
-                    child: Container(
-                      width: double.infinity,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryDark],
-                        ),
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.4),
-                            blurRadius: 16,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Text(
-                          'NEXT CHALLENGE',
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ),
-                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   // Return Home
-                  GestureDetector(
+                  TactileButton.dark(
+                    label: 'RETURN HOME',
+                    width: double.infinity,
+                    height: 50,
+                    fontSize: 15,
                     onTap: () => context.go('/home'),
-                    child: Container(
-                      width: double.infinity,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.glassBorder),
-                      ),
-                      child: Center(
-                        child: Text(
-                          'RETURN HOME',
-                          style: GoogleFonts.outfit(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textMuted,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
                   ),
                   const SizedBox(height: 32),
                 ],

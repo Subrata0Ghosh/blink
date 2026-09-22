@@ -196,6 +196,32 @@ class TactileButton extends StatefulWidget {
     );
   }
 
+  /// Dark slate / metallic 3D button (for secondary/neutral actions)
+  factory TactileButton.dark({
+    Key? key,
+    required String label,
+    required VoidCallback onTap,
+    double? width,
+    double height = 50,
+    IconData? icon,
+    double fontSize = 16,
+  }) {
+    return TactileButton(
+      key: key,
+      label: label,
+      onTap: onTap,
+      width: width,
+      height: height,
+      faceColorTop: const Color(0xFF2C3554),
+      faceColorBottom: const Color(0xFF171E33),
+      rimColor: const Color(0xFF0C101E),
+      textColor: AppColors.textPrimary,
+      icon: icon,
+      fontSize: fontSize,
+      borderRadius: height / 2,
+    );
+  }
+
   /// Circular 3D button for icons (Settings, Close, etc.)
   factory TactileButton.circle({
     Key? key,
@@ -218,6 +244,35 @@ class TactileButton extends StatefulWidget {
       rimHeight: 4,
       isRound: true,
       child: child,
+    );
+  }
+
+  /// Circular 3D Close / Cross Button (matching Image 2)
+  factory TactileButton.close({
+    Key? key,
+    required VoidCallback onTap,
+    double size = 42,
+    Color? iconColor,
+  }) {
+    return TactileButton.circle(
+      key: key,
+      size: size,
+      onTap: onTap,
+      faceColorTop: const Color(0xFF2A3452),
+      faceColorBottom: const Color(0xFF141A2D),
+      rimColor: const Color(0xFF090D18),
+      child: Icon(
+        Icons.close_rounded,
+        color: iconColor ?? Colors.white.withValues(alpha: 0.9),
+        size: size * 0.52,
+        shadows: [
+          Shadow(
+            color: Colors.black.withValues(alpha: 0.8),
+            offset: const Offset(0, 1.5),
+            blurRadius: 2,
+          ),
+        ],
+      ),
     );
   }
 
@@ -335,21 +390,23 @@ class _TactileButtonState extends State<TactileButton> with SingleTickerProvider
                         children: [
                           // Top Specular Highlight Crescent (Glossy sheen)
                           Positioned(
-                            top: 1,
-                            left: 8,
-                            right: 8,
-                            height: widget.height * 0.45,
+                            top: 1.5,
+                            left: widget.isRound ? widget.height * 0.16 : 8,
+                            right: widget.isRound ? widget.height * 0.16 : 8,
+                            height: widget.height * (widget.isRound ? 0.42 : 0.45),
                             child: Container(
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(widget.borderRadius * 0.8),
-                                  bottom: const Radius.elliptical(60, 12),
-                                ),
+                                borderRadius: widget.isRound
+                                    ? BorderRadius.all(Radius.elliptical(widget.height * 0.35, widget.height * 0.18))
+                                    : BorderRadius.vertical(
+                                        top: Radius.circular(widget.borderRadius * 0.8),
+                                        bottom: const Radius.elliptical(60, 12),
+                                      ),
                                 gradient: LinearGradient(
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    Colors.white.withValues(alpha: 0.55),
+                                    Colors.white.withValues(alpha: widget.isRound ? 0.65 : 0.55),
                                     Colors.white.withValues(alpha: 0.05),
                                   ],
                                 ),

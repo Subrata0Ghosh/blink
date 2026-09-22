@@ -11,6 +11,7 @@ import '../../gameplay/rendering/object_2d5_painter.dart';
 import '../../gameplay/rendering/star_2d5_painter.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
+import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/navigation/game_bottom_nav.dart';
 import '../../widgets/particles/particles.dart';
 
@@ -485,23 +486,32 @@ class _Inspect3dModalState extends State<_Inspect3dModal>
             ),
             const SizedBox(height: 16),
 
-            // Rarity Tag
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: widget.rarityColor.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: widget.rarityColor.withValues(alpha: 0.6)),
-              ),
-              child: Text(
-                widget.item.rarity,
-                style: GoogleFonts.outfit(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: widget.rarityColor,
-                  letterSpacing: 2,
+            // Top row with Rarity Tag & Close Button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: widget.rarityColor.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: widget.rarityColor.withValues(alpha: 0.6)),
+                  ),
+                  child: Text(
+                    widget.item.rarity,
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: widget.rarityColor,
+                      letterSpacing: 2,
+                    ),
+                  ),
                 ),
-              ),
+                TactileButton.close(
+                  size: 38,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
             ),
 
             const SizedBox(height: 12),
@@ -608,23 +618,12 @@ class _Inspect3dModalState extends State<_Inspect3dModal>
 
             const SizedBox(height: 20),
 
-            SizedBox(
+            TactileButton.nebula(
+              label: 'COLLECTED',
               width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: Text(
-                  'COLLECTED',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2,
-                  ),
-                ),
-              ),
+              height: 52,
+              fontSize: 16,
+              onTap: () => Navigator.pop(context),
             ),
           ],
         ),

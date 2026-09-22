@@ -13,6 +13,7 @@ import '../../gameplay/rendering/arena_surface.dart';
 import '../../gameplay/rendering/tactile_object.dart';
 import '../../gameplay/rendering/radial_energy_timer.dart';
 import '../../widgets/buttons/tactile_button.dart';
+import '../../widgets/buttons/tactile_option_button.dart';
 import '../../widgets/particles/particles.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
@@ -474,11 +475,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       child: Row(
         children: [
           // Close Button
-          TactileButton.circle(
-            size: 38,
-            faceColorTop: AppColors.surfaceLight,
-            faceColorBottom: const Color(0xFF0F1328),
-            rimColor: const Color(0xFF080C1A),
+          TactileButton.close(
+            size: 40,
             onTap: () {
               if (context.canPop()) {
                 context.pop();
@@ -486,7 +484,6 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                 context.go('/world');
               }
             },
-            child: const Icon(Icons.close_rounded, color: AppColors.textSecondary, size: 20),
           ),
 
           const SizedBox(width: 12),
@@ -549,30 +546,39 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
           const SizedBox(width: 8),
 
-          // Companion Nova avatar
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4), width: 2),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cyan.withValues(alpha: 0.15),
-                  blurRadius: 6,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: ClipOval(
-              child: Image.asset(
-                AppAssets.novaIdle,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const Icon(
-                  Icons.visibility_rounded,
-                  color: AppColors.cyan,
-                  size: 22,
-                ),
+          // Companion Nova avatar (Transparent, reactive on tap)
+          GestureDetector(
+            onTap: () => HapticFeedback.lightImpact(),
+            child: SizedBox(
+              width: 38,
+              height: 38,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.cyan.withValues(alpha: 0.5),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Image.asset(
+                    AppAssets.novaIdle,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.visibility_rounded,
+                      color: AppColors.cyan,
+                      size: 22,
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -908,16 +914,17 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
             const Spacer(),
 
-            // Tactile 3D Candy Answer Buttons
+            // Tactile 3D Candy Answer Buttons (matching Image 2)
             ..._challenge!.answers.asMap().entries.map((entry) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: _TactileAnswerButton(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TactileOptionButton(
                   index: entry.key,
                   text: entry.value,
                   isSelected: _selectedAnswer == entry.key,
                   isCorrect: entry.key == _challenge!.correctAnswerIndex,
                   showResult: _selectedAnswer != null,
+                  height: 54,
                   onTap: () => _onAnswerSelected(entry.key),
                 ),
               );
@@ -926,246 +933,6 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
             const Spacer(),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Tactile, juicy 3D answer button with extruded bevel rim and spring-press physics
-class _TactileAnswerButton extends StatefulWidget {
-  final int index;
-  final String text;
-  final bool isSelected;
-  final bool isCorrect;
-  final bool showResult;
-  final VoidCallback onTap;
-
-  const _TactileAnswerButton({
-    required this.index,
-    required this.text,
-    required this.isSelected,
-    required this.isCorrect,
-    required this.showResult,
-    required this.onTap,
-  });
-
-  @override
-  State<_TactileAnswerButton> createState() => _TactileAnswerButtonState();
-}
-
-class _TactileAnswerButtonState extends State<_TactileAnswerButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _pressController;
-  late Animation<double> _pressOffsetAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _pressController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 90),
-    );
-    _pressOffsetAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _pressController, curve: Curves.easeOutQuad),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pressController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // 4 Cosmic color themes (Cyan, Purple, Green, Nova Orange)
-    final colors = [
-      (AppColors.cosmicCyanLight, AppColors.cosmicCyanDark, AppColors.cosmicCyanRim),
-      (AppColors.nebulaPurpleLight, AppColors.nebulaPurpleDark, AppColors.nebulaPurpleRim),
-      (AppColors.stellarGreenLight, AppColors.stellarGreenDark, AppColors.stellarGreenRim),
-      (AppColors.novaOrangeLight, AppColors.novaOrangeDark, AppColors.novaOrangeRim),
-    ];
-
-    final theme = colors[widget.index % colors.length];
-    Color faceTop = theme.$1;
-    Color faceBottom = theme.$2;
-    Color rim = theme.$3;
-
-    if (widget.showResult) {
-      if (widget.isCorrect) {
-        faceTop = const Color(0xFF67F573);
-        faceBottom = const Color(0xFF169E24);
-        rim = const Color(0xFF0F6817);
-      } else if (widget.isSelected && !widget.isCorrect) {
-        faceTop = const Color(0xFFFF6E6E);
-        faceBottom = const Color(0xFFD42222);
-        rim = const Color(0xFF8A0B0B);
-      }
-    }
-
-    const double height = 58;
-    const double rimHeight = 5;
-    const double borderRadius = 24;
-
-    return GestureDetector(
-      onTapDown: (_) {
-        _pressController.forward();
-        HapticFeedback.lightImpact();
-      },
-      onTapUp: (_) {
-        _pressController.reverse();
-        widget.onTap();
-      },
-      onTapCancel: () => _pressController.reverse(),
-      child: AnimatedBuilder(
-        animation: _pressOffsetAnim,
-        builder: (context, child) {
-          final t = _pressOffsetAnim.value;
-          final pushDown = t * (rimHeight - 1);
-
-          return SizedBox(
-            width: double.infinity,
-            height: height + rimHeight,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                // 3D Rim (Extruded bottom bevel)
-                Positioned(
-                  top: rimHeight,
-                  left: 0,
-                  right: 0,
-                  height: height,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: rim,
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.28),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Top Glossy Face
-                Positioned(
-                  top: pushDown,
-                  left: 0,
-                  right: 0,
-                  height: height,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      gradient: LinearGradient(
-                        colors: [faceTop, faceBottom],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.5),
-                        width: 1.8,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(borderRadius),
-                      child: Stack(
-                        children: [
-                          // Top Specular Highlight Crescent
-                          Positioned(
-                            top: 1,
-                            left: 8,
-                            right: 8,
-                            height: height * 0.42,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.vertical(
-                                  top: Radius.circular(borderRadius * 0.8),
-                                  bottom: const Radius.elliptical(60, 10),
-                                ),
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Colors.white.withValues(alpha: 0.55),
-                                    Colors.white.withValues(alpha: 0.05),
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // Option Content
-                          Center(
-                            child: Row(
-                              children: [
-                                // Letter Badge (A, B, C, D)
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withValues(alpha: 0.95),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.2),
-                                        blurRadius: 3,
-                                        offset: const Offset(0, 1),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      String.fromCharCode(65 + widget.index),
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                        color: rim,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-
-                                // Option Text
-                                Expanded(
-                                  child: Text(
-                                    widget.text,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: rim.withValues(alpha: 0.9),
-                                          offset: const Offset(0, 2),
-                                          blurRadius: 2,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-
-                                // Result icon
-                                if (widget.showResult && widget.isCorrect)
-                                  const Icon(Icons.check_circle_rounded, color: Colors.white, size: 26),
-                                if (widget.showResult && widget.isSelected && !widget.isCorrect)
-                                  const Icon(Icons.cancel_rounded, color: Colors.white, size: 26),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
       ),
     );
   }

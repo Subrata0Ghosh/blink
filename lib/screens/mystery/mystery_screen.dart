@@ -11,6 +11,8 @@ import '../../gameplay/rendering/radial_energy_timer.dart';
 import '../../gameplay/rendering/tactile_object.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
+import '../../widgets/buttons/tactile_button.dart';
+import '../../widgets/buttons/tactile_option_button.dart';
 import '../../widgets/particles/particles.dart';
 
 /// Mystery Mode Screen — Section 40
@@ -150,19 +152,9 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(
                     children: [
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
+                      TactileButton.close(
+                        size: 42,
                         onTap: _handleClose,
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: AppColors.surfaceLight,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.gemPurple.withValues(alpha: 0.3)),
-                          ),
-                          child: const Icon(Icons.close_rounded, color: AppColors.textPrimary, size: 22),
-                        ),
                       ),
                       const Spacer(),
                       Container(
@@ -277,42 +269,16 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                         final isCorrect = entry.key == _challenge!.correctAnswerIndex;
                         final showRes = _selectedAnswer != null;
 
-                        Color borderCol = AppColors.gemPurple.withValues(alpha: 0.35);
-                        Color bgCol = AppColors.surface;
-                        if (showRes) {
-                          if (isCorrect) {
-                            borderCol = AppColors.success;
-                            bgCol = AppColors.success.withValues(alpha: 0.2);
-                          } else if (isSelected && !isCorrect) {
-                            borderCol = AppColors.error;
-                            bgCol = AppColors.error.withValues(alpha: 0.2);
-                          }
-                        }
-
                         return Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: GestureDetector(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: TactileOptionButton(
+                            index: entry.key,
+                            text: entry.value,
+                            isSelected: isSelected,
+                            isCorrect: isCorrect,
+                            showResult: showRes,
+                            height: 52,
                             onTap: () => _selectAnswer(entry.key),
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                              decoration: BoxDecoration(
-                                color: bgCol,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: borderCol,
-                                  width: isSelected ? 2.0 : 1.0,
-                                ),
-                              ),
-                              child: Text(
-                                entry.value,
-                                style: GoogleFonts.outfit(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
                           ),
                         );
                       }),
@@ -374,24 +340,12 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                         ),
                       ),
                       const SizedBox(height: 28),
-                      SizedBox(
-                        width: 200,
-                        child: ElevatedButton(
-                          onPressed: _handleClose,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.gemPurple,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          ),
-                          child: Text(
-                            'CLAIM REWARD',
-                            style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: 2,
-                            ),
-                          ),
-                        ),
+                      TactileButton.nebula(
+                        label: 'CLAIM REWARD',
+                        width: 220,
+                        height: 54,
+                        fontSize: 16,
+                        onTap: _handleClose,
                       ),
                     ],
                   ),
