@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/audio_service.dart';
 
 /// Unique 3D Tactile Bottom Navigation Dock for BLINK
 /// Features:
@@ -125,6 +126,7 @@ class _TactileNavTabState extends State<_TactileNavTab> with SingleTickerProvide
   void _onTapDown(TapDownDetails _) {
     _controller.forward();
     HapticFeedback.lightImpact();
+    AudioService().playUiClick();
   }
 
   void _onTapUp(TapUpDetails _) {

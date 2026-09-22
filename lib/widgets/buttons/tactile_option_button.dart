@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/theme/app_colors.dart';
+import '../../services/audio_service.dart';
 
 /// Tactile 3D Option Button for BLINK (matching user reference Image 2)
 /// Features:
@@ -94,6 +94,7 @@ class _TactileOptionButtonState extends State<TactileOptionButton>
   void _onTapDown(TapDownDetails _) {
     _controller.forward();
     HapticFeedback.lightImpact();
+    AudioService().playUiClick();
   }
 
   void _onTapUp(TapUpDetails _) {

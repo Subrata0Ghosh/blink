@@ -11,6 +11,7 @@ import '../../gameplay/rendering/object_2d5_painter.dart';
 import '../../gameplay/rendering/star_2d5_painter.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
+import '../../services/audio_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/navigation/game_bottom_nav.dart';
 import '../../widgets/particles/particles.dart';
@@ -142,6 +143,7 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
   }
 
   void _openInspectModal(_CollectibleItem item) {
+    AudioService().playGemPickup();
     triggerHaptic(ref, HapticService.mediumTap);
 
     showModalBottomSheet(
@@ -537,6 +539,7 @@ class _Inspect3dModalState extends State<_Inspect3dModal>
                 });
               },
               onTap: () {
+                AudioService().playGemPickup();
                 setState(() => _showSparkles = true);
               },
               child: AnimatedBuilder(

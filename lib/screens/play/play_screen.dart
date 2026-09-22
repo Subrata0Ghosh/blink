@@ -15,6 +15,7 @@ import '../../gameplay/rendering/radial_energy_timer.dart';
 import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/buttons/tactile_option_button.dart';
 import '../../widgets/particles/particles.dart';
+import '../../services/audio_service.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
 
@@ -194,6 +195,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       setState(() => _isWorldShifting = true);
       _shiftController.forward(from: 0.0);
       triggerHaptic(ref, HapticService.mediumTap);
+      AudioService().playUiConfirm();
 
       // Brief shift pause
       await Future.delayed(const Duration(milliseconds: 350));
@@ -263,6 +265,14 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       _score += 100 + (_combo * 15);
 
       triggerHaptic(ref, HapticService.correctAnswer);
+      if (result.isPerfect) {
+        AudioService().playPerfect();
+      } else {
+        AudioService().playCorrect();
+      }
+      if (_combo > 1) {
+        AudioService().playCombo();
+      }
 
       if (result.isPerfect) {
         setState(() {
@@ -293,6 +303,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
         challengeType: _challenge!.mode.name,
       );
       triggerHaptic(ref, HapticService.wrongAnswer);
+      AudioService().playWrong();
       _shakeController.forward(from: 0);
 
       Future.delayed(const Duration(milliseconds: 1800), () {

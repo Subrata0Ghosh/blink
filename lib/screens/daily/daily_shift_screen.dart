@@ -12,6 +12,7 @@ import '../../gameplay/rendering/radial_energy_timer.dart';
 import '../../gameplay/rendering/tactile_object.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
+import '../../services/audio_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/buttons/tactile_option_button.dart';
 import '../../widgets/particles/particles.dart';
@@ -101,6 +102,7 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
     });
 
     if (correct) {
+      AudioService().playCorrect();
       triggerHaptic(ref, HapticService.perfectAnswer);
       ref.read(gameStateProvider.notifier).updateStreak();
       ref.read(gameStateProvider.notifier).processChallengeResult(
@@ -111,14 +113,19 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
       );
 
       _victoryTimer = Timer(const Duration(milliseconds: 800), () {
-        if (mounted) setState(() => _showVictory = true);
+        if (mounted) {
+          AudioService().playChestOpen();
+          setState(() => _showVictory = true);
+        }
       });
     } else {
+      AudioService().playWrong();
       triggerHaptic(ref, HapticService.wrongAnswer);
     }
   }
 
   void _handleClose() {
+    AudioService().playGemPickup();
     triggerHaptic(ref, HapticService.lightTap);
     if (context.canPop()) {
       context.pop();

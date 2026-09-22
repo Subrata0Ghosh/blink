@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player_state.dart';
+import 'audio_service.dart';
 
 /// Manages all persistent game state — XP, gems, streaks, progression
 class GameStateNotifier extends StateNotifier<PlayerState> {
@@ -32,10 +33,23 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       onboardingComplete: prefs.getBool('onboardingComplete') ?? false,
       soundEnabled: prefs.getBool('soundEnabled') ?? true,
       hapticEnabled: prefs.getBool('hapticEnabled') ?? true,
-      musicVolume: prefs.getDouble('musicVolume') ?? 1.0,
-      sfxVolume: prefs.getDouble('sfxVolume') ?? 1.0,
+      musicVolume: prefs.getDouble('musicVolume') ?? 0.5,
+      sfxVolume: prefs.getDouble('sfxVolume') ?? 0.8,
       worldLevel: prefs.getInt('worldLevel') ?? 1,
+      observerId: prefs.getString('observerId') ?? '16710538479',
+      selectedAvatarId: prefs.getString('selectedAvatarId') ?? 'nova_happy',
+      selectedFrameId: prefs.getString('selectedFrameId') ?? 'frame_cyan',
+      country: prefs.getString('country') ?? 'Cosmos',
+      voiceEnabled: prefs.getBool('voiceEnabled') ?? true,
+      monoAudio: prefs.getBool('monoAudio') ?? false,
+      audioBalance: prefs.getDouble('audioBalance') ?? 0.0,
+      bassWarmth: prefs.getDouble('bassWarmth') ?? 0.5,
+      sparkleSoftness: prefs.getDouble('sparkleSoftness') ?? 0.6,
     );
+
+    AudioService().setSoundEnabled(state.soundEnabled);
+    AudioService().setMusicVolume(state.musicVolume);
+    AudioService().setSfxVolume(state.sfxVolume);
   }
 
   Future<void> _saveState() async {
@@ -60,6 +74,15 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     await prefs.setDouble('musicVolume', state.musicVolume);
     await prefs.setDouble('sfxVolume', state.sfxVolume);
     await prefs.setInt('worldLevel', state.worldLevel);
+    await prefs.setString('observerId', state.observerId);
+    await prefs.setString('selectedAvatarId', state.selectedAvatarId);
+    await prefs.setString('selectedFrameId', state.selectedFrameId);
+    await prefs.setString('country', state.country);
+    await prefs.setBool('voiceEnabled', state.voiceEnabled);
+    await prefs.setBool('monoAudio', state.monoAudio);
+    await prefs.setDouble('audioBalance', state.audioBalance);
+    await prefs.setDouble('bassWarmth', state.bassWarmth);
+    await prefs.setDouble('sparkleSoftness', state.sparkleSoftness);
   }
 
   void completeOnboarding(String name) {
@@ -181,12 +204,60 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
   }
 
   void toggleSound() {
-    state = state.copyWith(soundEnabled: !state.soundEnabled);
+    final next = !state.soundEnabled;
+    state = state.copyWith(soundEnabled: next);
+    AudioService().setSoundEnabled(next);
     _saveState();
   }
 
   void toggleHaptic() {
     state = state.copyWith(hapticEnabled: !state.hapticEnabled);
+    _saveState();
+  }
+
+  void setMusicVolume(double vol) {
+    state = state.copyWith(musicVolume: vol);
+    AudioService().setMusicVolume(vol);
+    _saveState();
+  }
+
+  void setSfxVolume(double vol) {
+    state = state.copyWith(sfxVolume: vol);
+    AudioService().setSfxVolume(vol);
+    _saveState();
+  }
+
+  void setAvatar(String avatarId) {
+    state = state.copyWith(selectedAvatarId: avatarId);
+    _saveState();
+  }
+
+  void setFrame(String frameId) {
+    state = state.copyWith(selectedFrameId: frameId);
+    _saveState();
+  }
+
+  void setDisplayName(String name) {
+    if (name.trim().isNotEmpty) {
+      state = state.copyWith(displayName: name.trim());
+      _saveState();
+    }
+  }
+
+  void setAudioTuning({
+    bool? voiceEnabled,
+    bool? monoAudio,
+    double? audioBalance,
+    double? bassWarmth,
+    double? sparkleSoftness,
+  }) {
+    state = state.copyWith(
+      voiceEnabled: voiceEnabled ?? state.voiceEnabled,
+      monoAudio: monoAudio ?? state.monoAudio,
+      audioBalance: audioBalance ?? state.audioBalance,
+      bassWarmth: bassWarmth ?? state.bassWarmth,
+      sparkleSoftness: sparkleSoftness ?? state.sparkleSoftness,
+    );
     _saveState();
   }
 }

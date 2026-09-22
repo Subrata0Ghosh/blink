@@ -7,6 +7,7 @@ import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/particles/particles.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
+import '../../services/audio_service.dart';
 import '../../core/constants/app_assets.dart';
 
 /// Result screen — shows performance, XP, gems with satisfying animations
@@ -102,13 +103,21 @@ class _ResultScreenState extends ConsumerState<ResultScreen> with TickerProvider
     if (_titleText == 'PERFECT') {
       setState(() => _showSparkBurst = true);
       triggerHaptic(ref, HapticService.perfectAnswer);
+      AudioService().playPerfect();
+    } else if (_titleText == 'GREAT' || _titleText == 'GOOD') {
+      triggerHaptic(ref, HapticService.correctAnswer);
+      AudioService().playLevelUp();
     } else {
       triggerHaptic(ref, HapticService.correctAnswer);
+      AudioService().playUiConfirm();
     }
 
     await Future.delayed(const Duration(milliseconds: 600));
     _gemController.forward();
     triggerHaptic(ref, HapticService.gemPickup);
+    if (_gems > 0) {
+      AudioService().playGemPickup();
+    }
 
     await Future.delayed(const Duration(milliseconds: 300));
     _xpController.forward();

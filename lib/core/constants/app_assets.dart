@@ -17,6 +17,7 @@ class AppAssets {
 
   // World
   static const String floatingIsland = 'assets/images/world/floating_island.png';
+  static const String islandPlatform3d = 'assets/images/world/island_platform_3d.png';
 
   // Currency & Rewards
   static const String shiftGem = 'assets/images/gems/shift_gem.png';

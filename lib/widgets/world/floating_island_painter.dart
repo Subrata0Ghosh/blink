@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Enum defining the 5 cosmic biomes for floating islands in BLINK
@@ -11,53 +12,333 @@ enum IslandBiome {
   cyberStarforge,  // Levels 17-20: Hexagonal cyber-platform, cyan energy conduits
 }
 
-/// A standalone 3D Floating Island widget that cradles one or more level nodes
-class FloatingIslandWidget extends StatelessWidget {
+/// A standalone 3D Floating Island widget that cradles one or more level nodes.
+/// Features:
+/// - Isolated high-fidelity 3D platform asset without background
+/// - Idle cosmic levitation physics with harmonic biome offsets
+/// - True 3D orbiting crystal satellites (depth-sorted behind and in front of the island)
+/// - Pulsing ancient rune dais glow on the active level
+/// - Milestone realm gateway styling
+class FloatingIslandWidget extends StatefulWidget {
   final IslandBiome biome;
   final double width;
   final double height;
+  final bool isCurrent;
+  final bool isMilestone;
   final Widget child;
 
   const FloatingIslandWidget({
     super.key,
     required this.biome,
     this.width = 150,
-    this.height = 130,
+    this.height = 145,
+    this.isCurrent = false,
+    this.isMilestone = false,
     required this.child,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      height: height,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // 1. 3D Floating Island Artwork
-          Positioned.fill(
-            child: CustomPaint(
-              painter: _FloatingIslandPainter(biome: biome),
-            ),
-          ),
+  State<FloatingIslandWidget> createState() => _FloatingIslandWidgetState();
+}
 
-          // 2. Island Content (e.g. 3D Level Button Node & Golden Crest)
-          Positioned(
-            top: height * 0.08,
-            child: child,
+class _FloatingIslandWidgetState extends State<FloatingIslandWidget>
+    with TickerProviderStateMixin {
+  late AnimationController _floatController;
+  late AnimationController _orbitController;
+
+  @override
+  void initState() {
+    super.initState();
+    final phaseOffset = (widget.biome.index * 0.22) % 1.0;
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+      value: phaseOffset,
+    )..repeat(reverse: true);
+
+    _orbitController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    );
+
+    if (widget.isCurrent || widget.isMilestone) {
+      _orbitController.repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant FloatingIslandWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if ((widget.isCurrent || widget.isMilestone) && !_orbitController.isAnimating) {
+      _orbitController.repeat();
+    } else if (!widget.isCurrent && !widget.isMilestone && _orbitController.isAnimating) {
+      _orbitController.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _floatController.dispose();
+    _orbitController.dispose();
+    super.dispose();
+  }
+
+  Color _getBiomeGlowColor() {
+    switch (widget.biome) {
+      case IslandBiome.verdantAstral:
+        return const Color(0xFF22C55E);
+      case IslandBiome.cosmicCrystal:
+        return const Color(0xFFA855F7);
+      case IslandBiome.solarMagma:
+        return const Color(0xFFFF6D00);
+      case IslandBiome.aetherCloud:
+        return const Color(0xFF38BDF8);
+      case IslandBiome.cyberStarforge:
+        return AppColors.cyan;
+    }
+  }
+
+  ColorFilter? _getBiomeColorFilter() {
+    switch (widget.biome) {
+      case IslandBiome.verdantAstral:
+        return null;
+      case IslandBiome.cosmicCrystal:
+        return const ColorFilter.matrix(<double>[
+          0.7, 0.0, 0.4, 0, 30,
+          0.1, 0.4, 0.3, 0, 0,
+          0.3, 0.0, 1.2, 0, 50,
+          0.0, 0.0, 0.0, 1, 0,
+        ]);
+      case IslandBiome.solarMagma:
+        return const ColorFilter.matrix(<double>[
+          1.3, 0.1, 0.0, 0, 50,
+          0.5, 0.6, 0.0, 0, 10,
+          0.0, 0.0, 0.4, 0, 0,
+          0.0, 0.0, 0.0, 1, 0,
+        ]);
+      case IslandBiome.aetherCloud:
+        return const ColorFilter.matrix(<double>[
+          0.6, 0.2, 0.4, 0, 40,
+          0.4, 0.8, 0.4, 0, 50,
+          0.5, 0.3, 1.2, 0, 80,
+          0.0, 0.0, 0.0, 1, 0,
+        ]);
+      case IslandBiome.cyberStarforge:
+        return const ColorFilter.matrix(<double>[
+          0.3, 0.1, 0.4, 0, 0,
+          0.2, 1.1, 0.4, 0, 40,
+          0.3, 0.3, 1.4, 0, 60,
+          0.0, 0.0, 0.0, 1, 0,
+        ]);
+    }
+  }
+
+  Widget _buildOrbitShard({
+    required double angle,
+    required double radiusX,
+    required double radiusY,
+    required Offset center,
+    required Color color,
+    required bool isForeground,
+  }) {
+    final sinVal = sin(angle);
+    final inForeground = sinVal >= 0;
+    if (inForeground != isForeground) return const SizedBox.shrink();
+
+    final cosVal = cos(angle);
+    final posX = center.dx + cosVal * radiusX;
+    final posY = center.dy + sinVal * radiusY;
+    final scale = isForeground ? 1.0 + (sinVal * 0.25) : 0.65 + (sinVal * 0.15);
+    final opacity = isForeground ? (0.75 + sinVal * 0.25).clamp(0.0, 1.0) : 0.40;
+
+    return Positioned(
+      left: posX - 6 * scale,
+      top: posY - 6 * scale,
+      child: Opacity(
+        opacity: opacity,
+        child: Container(
+          width: 12 * scale,
+          height: 12 * scale,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: color,
+                blurRadius: 8 * scale,
+                spreadRadius: 2 * scale,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final glowColor = _getBiomeGlowColor();
+    final filter = _getBiomeColorFilter();
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([_floatController, _orbitController]),
+      builder: (context, _) {
+        final floatOffset = sin(_floatController.value * 2 * pi) * 2.8;
+        final orbitAngle = _orbitController.value * 2 * pi;
+        final daisCenter = Offset(widget.width * 0.50, (widget.height * 0.32) + floatOffset);
+        final orbitRx = widget.width * 0.46;
+        final orbitRy = widget.height * 0.16;
+
+        return SizedBox(
+          width: widget.width,
+          height: widget.height,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              // 1. Ambient Biome Underglow / Void Depth Shadow
+              Positioned(
+                bottom: widget.height * 0.08 - floatOffset,
+                child: Container(
+                  width: widget.width * 0.62,
+                  height: widget.height * 0.24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: glowColor.withValues(
+                          alpha: widget.isMilestone ? 0.55 : 0.35,
+                        ),
+                        blurRadius: widget.isMilestone ? 36 : 28,
+                        spreadRadius: widget.isMilestone ? 6 : 4,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.50),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 2. 3D Orbiting Satellites (Far side - BEHIND island)
+              if (widget.isCurrent || widget.isMilestone) ...[
+                _buildOrbitShard(
+                  angle: orbitAngle,
+                  radiusX: orbitRx,
+                  radiusY: orbitRy,
+                  center: daisCenter,
+                  color: glowColor,
+                  isForeground: false,
+                ),
+                _buildOrbitShard(
+                  angle: orbitAngle + (2 * pi / 3),
+                  radiusX: orbitRx,
+                  radiusY: orbitRy,
+                  center: daisCenter,
+                  color: widget.isMilestone ? const Color(0xFFFFD54F) : AppColors.cyan,
+                  isForeground: false,
+                ),
+                _buildOrbitShard(
+                  angle: orbitAngle + (4 * pi / 3),
+                  radiusX: orbitRx,
+                  radiusY: orbitRy,
+                  center: daisCenter,
+                  color: AppColors.cosmicCyanLight,
+                  isForeground: false,
+                ),
+              ],
+
+              // 3. 3D Floating Island Platform Artwork (Cutout transparent PNG)
+              Positioned.fill(
+                child: Transform.translate(
+                  offset: Offset(0, floatOffset),
+                  child: filter != null
+                      ? ColorFiltered(
+                          colorFilter: filter,
+                          child: Image.asset(
+                            AppAssets.islandPlatform3d,
+                            fit: BoxFit.contain,
+                          ),
+                        )
+                      : Image.asset(
+                          AppAssets.islandPlatform3d,
+                          fit: BoxFit.contain,
+                        ),
+                ),
+              ),
+
+              // 4. Pulsing Ancient Rune Dais Glow (Beneath level button on stone circle)
+              if (widget.isCurrent)
+                Positioned(
+                  top: (widget.height * 0.10) + floatOffset,
+                  child: Container(
+                    width: widget.width * 0.44,
+                    height: widget.width * 0.44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.cyan.withValues(
+                            alpha: 0.30 + (sin(_floatController.value * 2 * pi).abs() * 0.25),
+                          ),
+                          blurRadius: 20,
+                          spreadRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // 5. 3D Orbiting Satellites (Near side - IN FRONT of island)
+              if (widget.isCurrent || widget.isMilestone) ...[
+                _buildOrbitShard(
+                  angle: orbitAngle,
+                  radiusX: orbitRx,
+                  radiusY: orbitRy,
+                  center: daisCenter,
+                  color: glowColor,
+                  isForeground: true,
+                ),
+                _buildOrbitShard(
+                  angle: orbitAngle + (2 * pi / 3),
+                  radiusX: orbitRx,
+                  radiusY: orbitRy,
+                  center: daisCenter,
+                  color: widget.isMilestone ? const Color(0xFFFFD54F) : AppColors.cyan,
+                  isForeground: true,
+                ),
+                _buildOrbitShard(
+                  angle: orbitAngle + (4 * pi / 3),
+                  radiusX: orbitRx,
+                  radiusY: orbitRy,
+                  center: daisCenter,
+                  color: AppColors.cosmicCyanLight,
+                  isForeground: true,
+                ),
+              ],
+
+              // 6. Island Content (3D Tactile Level Node Button / Lock)
+              // Centered right on the stone circular dais
+              Positioned(
+                top: (widget.height * 0.08) + floatOffset,
+                child: widget.child,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
-/// CustomPainter that renders a rich 3D floating island with perspective depth,
-/// cliff strata, rim lighting, and biome features
-class _FloatingIslandPainter extends CustomPainter {
+/// CustomPainter that procedurally renders a 3D floating island with perspective depth,
+/// cliff strata, rim lighting, and biome features as a vector fallback.
+class FloatingIslandPainter extends CustomPainter {
   final IslandBiome biome;
 
-  _FloatingIslandPainter({required this.biome});
+  FloatingIslandPainter({required this.biome});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -435,7 +716,7 @@ class _FloatingIslandPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _FloatingIslandPainter oldDelegate) {
+  bool shouldRepaint(covariant FloatingIslandPainter oldDelegate) {
     return oldDelegate.biome != biome;
   }
 }

@@ -20,6 +20,15 @@ class PlayerState extends Equatable {
   final double musicVolume;
   final double sfxVolume;
   final int worldLevel; // world growth progression
+  final String observerId;
+  final String selectedAvatarId;
+  final String selectedFrameId;
+  final String country;
+  final bool voiceEnabled;
+  final bool monoAudio;
+  final double audioBalance;
+  final double bassWarmth;
+  final double sparkleSoftness;
 
   const PlayerState({
     this.displayName = 'Observer',
@@ -37,9 +46,18 @@ class PlayerState extends Equatable {
     this.onboardingComplete = false,
     this.soundEnabled = true,
     this.hapticEnabled = true,
-    this.musicVolume = 1.0,
-    this.sfxVolume = 1.0,
+    this.musicVolume = 0.5,
+    this.sfxVolume = 0.8,
     this.worldLevel = 1,
+    this.observerId = '16710538479',
+    this.selectedAvatarId = 'nova_happy',
+    this.selectedFrameId = 'frame_cyan',
+    this.country = 'Cosmos',
+    this.voiceEnabled = true,
+    this.monoAudio = false,
+    this.audioBalance = 0.0,
+    this.bassWarmth = 0.5,
+    this.sparkleSoftness = 0.6,
   });
 
   PlayerState copyWith({
@@ -61,6 +79,15 @@ class PlayerState extends Equatable {
     double? musicVolume,
     double? sfxVolume,
     int? worldLevel,
+    String? observerId,
+    String? selectedAvatarId,
+    String? selectedFrameId,
+    String? country,
+    bool? voiceEnabled,
+    bool? monoAudio,
+    double? audioBalance,
+    double? bassWarmth,
+    double? sparkleSoftness,
   }) {
     return PlayerState(
       displayName: displayName ?? this.displayName,
@@ -81,6 +108,15 @@ class PlayerState extends Equatable {
       musicVolume: musicVolume ?? this.musicVolume,
       sfxVolume: sfxVolume ?? this.sfxVolume,
       worldLevel: worldLevel ?? this.worldLevel,
+      observerId: observerId ?? this.observerId,
+      selectedAvatarId: selectedAvatarId ?? this.selectedAvatarId,
+      selectedFrameId: selectedFrameId ?? this.selectedFrameId,
+      country: country ?? this.country,
+      voiceEnabled: voiceEnabled ?? this.voiceEnabled,
+      monoAudio: monoAudio ?? this.monoAudio,
+      audioBalance: audioBalance ?? this.audioBalance,
+      bassWarmth: bassWarmth ?? this.bassWarmth,
+      sparkleSoftness: sparkleSoftness ?? this.sparkleSoftness,
     );
   }
 
@@ -93,6 +129,8 @@ class PlayerState extends Equatable {
         correctAnswers, bestCombo, currentStreak, bestStreak,
         bestReactionTimeMs, lastPlayedDate, onboardingComplete,
         soundEnabled, hapticEnabled, musicVolume, sfxVolume, worldLevel,
+        observerId, selectedAvatarId, selectedFrameId, country,
+        voiceEnabled, monoAudio, audioBalance, bassWarmth, sparkleSoftness,
       ];
 }
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/audio_service.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
@@ -35,6 +36,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
   @override
   void initState() {
     super.initState();
+    AudioService().startAmbientMusic();
     _scrollController = ScrollController(initialScrollOffset: 1400);
     _pulseController = AnimationController(
       vsync: this,
@@ -308,15 +310,21 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
                     physics: const BouncingScrollPhysics(),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 2050,
-                      child: CustomPaint(
-                        painter: _ConstellationPathPainter(
-                          waypoints: _getWaypoints(MediaQuery.of(context).size.width),
-                          activeLevel: currentLevel,
-                        ),
-                        child: Stack(
-                          children: _buildLevelNodes(currentLevel, MediaQuery.of(context).size.width),
-                        ),
+                      height: 3300,
+                      child: AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, _) {
+                          return CustomPaint(
+                            painter: _ConstellationPathPainter(
+                              waypoints: _getWaypoints(MediaQuery.of(context).size.width),
+                              activeLevel: currentLevel,
+                              pulseValue: _pulseController.value,
+                            ),
+                            child: Stack(
+                              children: _buildLevelNodes(currentLevel, MediaQuery.of(context).size.width),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -333,54 +341,60 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
   }
 
   List<Offset> _getWaypoints(double screenWidth) {
-    // S-curve journey waypoints
-    return [
-      Offset(screenWidth * 0.50, 1920),  // Level 1 (bottom)
-      Offset(screenWidth * 0.72, 1830),
-      Offset(screenWidth * 0.78, 1730),
-      Offset(screenWidth * 0.65, 1630),
-      Offset(screenWidth * 0.45, 1540),
-      Offset(screenWidth * 0.28, 1450),
-      Offset(screenWidth * 0.22, 1350),
-      Offset(screenWidth * 0.35, 1250),
-      Offset(screenWidth * 0.52, 1160),
-      Offset(screenWidth * 0.70, 1070),
-      Offset(screenWidth * 0.75, 970),
-      Offset(screenWidth * 0.62, 870),
-      Offset(screenWidth * 0.45, 780),
-      Offset(screenWidth * 0.30, 690),
-      Offset(screenWidth * 0.22, 590),
-      Offset(screenWidth * 0.35, 490),
-      Offset(screenWidth * 0.52, 400),
-      Offset(screenWidth * 0.70, 310),
-      Offset(screenWidth * 0.58, 210),
-      Offset(screenWidth * 0.40, 120),  // Level 20 (top)
-    ];
+    // 5 Biome Constellation Archipelagos (Levels 1 to 20)
+    // Generous ~600px vertical step per realm with ZERO overlapping
+    final baseYs = [2850.0, 2250.0, 1650.0, 1050.0, 450.0];
+    final waypoints = <Offset>[];
+
+    for (int b = 0; b < baseYs.length; b++) {
+      final cy = baseYs[b];
+      final isEven = b % 2 == 0;
+      final westX = screenWidth * (isEven ? 0.22 : 0.78);
+      final eastX = screenWidth * (isEven ? 0.78 : 0.22);
+
+      waypoints.addAll([
+        Offset(screenWidth * 0.50, cy + 130), // Base Entrance (Level 4b + 1)
+        Offset(westX, cy),                    // Flank Satellite 1 (Level 4b + 2)
+        Offset(eastX, cy),                    // Flank Satellite 2 (Level 4b + 3)
+        Offset(screenWidth * 0.50, cy - 130), // Gateway Citadel (Level 4b + 4)
+      ]);
+    }
+    return waypoints;
   }
 
   List<Widget> _buildLevelNodes(int activeLevel, double screenWidth) {
     final List<Widget> nodes = [];
     final waypoints = _getWaypoints(screenWidth);
 
-    for (int i = 0; i < waypoints.length; i++) {
+    // Sort by Y ascending (top to bottom on screen), so background islands (smaller Y)
+    // are added FIRST, and foreground islands (larger Y) are added LAST!
+    // In Flutter Stack, later children render ON TOP of earlier children.
+    final indexedWaypoints = List.generate(waypoints.length, (i) => MapEntry(i, waypoints[i]))
+      ..sort((a, b) => a.value.dy.compareTo(b.value.dy));
+
+    for (final entry in indexedWaypoints) {
+      final i = entry.key;
+      final wp = entry.value;
       final levelNum = i + 1;
-      final wp = waypoints[i];
       final isCurrent = levelNum == activeLevel;
       final isUnlocked = levelNum <= activeLevel;
       final stars = isUnlocked ? (levelNum < activeLevel ? 3 : 2) : 0;
       final biome = _getBiomeForLevel(levelNum);
+      final isMilestone = levelNum % 4 == 0;
 
-      const islandWidth = 146.0;
-      const islandHeight = 120.0;
+      final islandWidth = isMilestone ? 168.0 : 145.0;
+      final islandHeight = isMilestone ? 160.0 : 140.0;
 
       nodes.add(
         Positioned(
-          top: wp.dy - (islandHeight * 0.45),
+          top: wp.dy - (islandHeight * 0.28),
           left: wp.dx - (islandWidth * 0.5),
           child: FloatingIslandWidget(
             biome: biome,
             width: islandWidth,
             height: islandHeight,
+            isCurrent: isCurrent,
+            isMilestone: isMilestone,
             child: _TactileLevelNode(
               levelNum: levelNum,
               stars: stars,
@@ -442,6 +456,11 @@ class _TactileLevelNodeState extends State<_TactileLevelNode> with SingleTickerP
   void _onTapDown(TapDownDetails _) {
     _pressController.forward();
     HapticFeedback.lightImpact();
+    if (widget.isUnlocked) {
+      AudioService().playUiConfirm();
+    } else {
+      AudioService().playUiBack();
+    }
   }
 
   void _onTapUp(TapUpDetails _) {
@@ -485,54 +504,59 @@ class _TactileLevelNodeState extends State<_TactileLevelNode> with SingleTickerP
       onTapUp: _onTapUp,
       onTapCancel: _onTapCancel,
       behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
         children: [
-          // Current Player floating indicator
-          if (widget.isCurrent) ...[
-            AnimatedBuilder(
-              animation: widget.pulseAnimation,
-              builder: (context, child) {
-                return Transform.scale(
-                  scale: widget.pulseAnimation.value,
-                  child: child,
-                );
-              },
-              child: Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const LinearGradient(
-                    colors: [AppColors.cosmicCyanLight, AppColors.cosmicCyanDark],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    width: 1.5,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.cyan.withValues(alpha: 0.7),
-                      blurRadius: 12,
-                      spreadRadius: 2,
+          // 1. Current Player floating crown indicator (hovers directly over the button without pushing it down)
+          if (widget.isCurrent)
+            Positioned(
+              top: -26,
+              child: AnimatedBuilder(
+                animation: widget.pulseAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: widget.pulseAnimation.value,
+                    child: child,
+                  );
+                },
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [AppColors.cosmicCyanLight, AppColors.cosmicCyanDark],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(Icons.person_rounded, color: Colors.white, size: 16),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.cyan.withValues(alpha: 0.75),
+                        blurRadius: 12,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(Icons.person_rounded, color: Colors.white, size: 15),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 3),
-          ],
 
-          // 3D Tactile Button Node
-          AnimatedBuilder(
-            animation: _pressController,
-            builder: (context, _) {
-              final t = _pressController.value;
+          // 2. 3D Tactile Button Node & Star Crest
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedBuilder(
+                animation: _pressController,
+                builder: (context, _) {
+                  final t = _pressController.value;
               final pushDown = t * (rimHeight - 0.5);
 
               return SizedBox(
@@ -708,7 +732,9 @@ class _TactileLevelNodeState extends State<_TactileLevelNode> with SingleTickerP
           ],
         ],
       ),
-    );
+    ],
+  ),
+);
   }
 
   Widget _buildCrestStar({required bool hasStar, required double size}) {
@@ -746,47 +772,137 @@ class _TactileLevelNodeState extends State<_TactileLevelNode> with SingleTickerP
   }
 }
 
-/// Custom painter that draws glowing constellation lines between floating island waypoints
+/// Custom painter that draws glowing constellation links and warp bridges across archipelagos
 class _ConstellationPathPainter extends CustomPainter {
   final List<Offset> waypoints;
   final int activeLevel;
+  final double pulseValue;
 
-  _ConstellationPathPainter({required this.waypoints, required this.activeLevel});
+  _ConstellationPathPainter({
+    required this.waypoints,
+    required this.activeLevel,
+    required this.pulseValue,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    for (int i = 0; i < waypoints.length - 1; i++) {
-      final from = waypoints[i];
-      final to = waypoints[i + 1];
+    if (waypoints.isEmpty) return;
 
-      final isActive = (i + 1) < activeLevel;
-      final isCurrent = (i + 1) == activeLevel;
+    // 1. Draw Biome Nebula Atmosphere Disks under each archipelago
+    final baseYs = [2850.0, 2250.0, 1650.0, 1050.0, 450.0];
+    final nebulaColors = [
+      const Color(0xFF10B981), // Verdant Emerald
+      const Color(0xFFA855F7), // Cosmic Purple
+      const Color(0xFFFF6D00), // Solar Amber
+      const Color(0xFF38BDF8), // Aether Sky Blue
+      AppColors.cyan,          // Cyber Cyan
+    ];
 
+    for (int b = 0; b < baseYs.length; b++) {
+      final cy = baseYs[b];
+      final color = nebulaColors[b];
+      final rect = Rect.fromCircle(center: Offset(size.width * 0.50, cy), radius: 240);
       final paint = Paint()
-        ..strokeWidth = isActive ? 2.5 : 1.2
-        ..strokeCap = StrokeCap.round
-        ..style = PaintingStyle.stroke;
-
-      if (isActive) {
-        paint.color = AppColors.cyan.withValues(alpha: 0.55);
-        paint.maskFilter = const MaskFilter.blur(BlurStyle.solid, 2);
-      } else if (isCurrent) {
-        paint.color = AppColors.cosmicCyanLight.withValues(alpha: 0.4);
-      } else {
-        paint.color = Colors.white.withValues(alpha: 0.10);
-      }
-
-      _drawDashedLine(canvas, from, to, paint);
+        ..shader = RadialGradient(
+          colors: [
+            color.withValues(alpha: 0.12),
+            color.withValues(alpha: 0.04),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.55, 1.0],
+        ).createShader(rect);
+      canvas.drawCircle(Offset(size.width * 0.50, cy), 240, paint);
     }
 
-    // Small decorative cosmic stars
-    final rng = Random(42);
-    final starPaint = Paint()..color = Colors.white.withValues(alpha: 0.2);
-    for (int i = 0; i < 60; i++) {
-      final x = rng.nextDouble() * size.width;
-      final y = rng.nextDouble() * size.height;
-      final r = rng.nextDouble() * 1.5 + 0.5;
-      canvas.drawCircle(Offset(x, y), r, starPaint);
+    // 2. Draw Constellation Links within Archipelagos
+    for (int b = 0; b < 5; b++) {
+      final baseIdx = 4 * b;
+      if (baseIdx + 3 >= waypoints.length) break;
+
+      final pBase = waypoints[baseIdx];
+      final pWest = waypoints[baseIdx + 1];
+      final pEast = waypoints[baseIdx + 2];
+      final pGate = waypoints[baseIdx + 3];
+
+      _drawLink(canvas, pBase, pWest, (baseIdx + 2) <= activeLevel, (baseIdx + 2) == activeLevel);
+      _drawLink(canvas, pBase, pEast, (baseIdx + 3) <= activeLevel, (baseIdx + 3) == activeLevel);
+      _drawLink(canvas, pWest, pGate, (baseIdx + 4) <= activeLevel, (baseIdx + 4) == activeLevel);
+      _drawLink(canvas, pEast, pGate, (baseIdx + 4) <= activeLevel, (baseIdx + 4) == activeLevel);
+
+      // 3. Draw Cosmic Warp Bridge between Gateways
+      if (b < 4 && baseIdx + 4 < waypoints.length) {
+        final pNextBase = waypoints[baseIdx + 4];
+        final isBridgeActive = (baseIdx + 5) <= activeLevel;
+        _drawWarpBridge(canvas, pGate, pNextBase, isBridgeActive);
+      }
+    }
+  }
+
+  void _drawLink(Canvas canvas, Offset from, Offset to, bool isActive, bool isCurrent) {
+    final paint = Paint()
+      ..strokeWidth = isActive ? 2.2 : 1.2
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke;
+
+    if (isActive) {
+      paint.color = AppColors.cyan.withValues(alpha: 0.65);
+      paint.maskFilter = const MaskFilter.blur(BlurStyle.solid, 2);
+    } else if (isCurrent) {
+      paint.color = AppColors.cosmicCyanLight.withValues(alpha: 0.45);
+    } else {
+      paint.color = Colors.white.withValues(alpha: 0.12);
+    }
+
+    _drawDashedLine(canvas, from, to, paint);
+
+    // Stardust energy pulse travelling along active links
+    if (isActive) {
+      final t = (pulseValue + (from.dy * 0.001)) % 1.0;
+      final px = from.dx + (to.dx - from.dx) * t;
+      final py = from.dy + (to.dy - from.dy) * t;
+
+      final pulsePaint = Paint()
+        ..color = Colors.white
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
+      canvas.drawCircle(Offset(px, py), 3.5, pulsePaint);
+    }
+  }
+
+  void _drawWarpBridge(Canvas canvas, Offset from, Offset to, bool isActive) {
+    final beamPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = isActive ? 3.0 : 1.5;
+
+    if (isActive) {
+      beamPaint.color = AppColors.cyan.withValues(alpha: 0.45);
+      beamPaint.maskFilter = const MaskFilter.blur(BlurStyle.solid, 4);
+    } else {
+      beamPaint.color = Colors.white.withValues(alpha: 0.10);
+    }
+
+    // Double beam
+    final dx = to.dx - from.dx;
+    final dy = to.dy - from.dy;
+    final dist = sqrt(dx * dx + dy * dy);
+    if (dist == 0) return;
+    final nx = -dy / dist * 8;
+    final ny = dx / dist * 8;
+
+    _drawDashedLine(canvas, Offset(from.dx + nx, from.dy + ny), Offset(to.dx + nx, to.dy + ny), beamPaint);
+    _drawDashedLine(canvas, Offset(from.dx - nx, from.dy - ny), Offset(to.dx - nx, to.dy - ny), beamPaint);
+
+    if (isActive) {
+      // Traveling warp pulses
+      for (int i = 0; i < 3; i++) {
+        final t = (pulseValue + (i * 0.33)) % 1.0;
+        final px = from.dx + dx * t;
+        final py = from.dy + dy * t;
+        final glow = Paint()
+          ..color = AppColors.cosmicCyanLight
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+        canvas.drawCircle(Offset(px, py), 4.0, glow);
+        canvas.drawCircle(Offset(px, py), 2.0, Paint()..color = Colors.white);
+      }
     }
   }
 
@@ -814,6 +930,6 @@ class _ConstellationPathPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ConstellationPathPainter oldDelegate) {
-    return oldDelegate.activeLevel != activeLevel;
+    return oldDelegate.activeLevel != activeLevel || oldDelegate.pulseValue != pulseValue;
   }
 }

@@ -9,6 +9,7 @@ import 'package:blink/screens/profile/profile_screen.dart';
 import 'package:blink/screens/daily/daily_shift_screen.dart';
 import 'package:blink/screens/mystery/mystery_screen.dart';
 import 'package:blink/widgets/navigation/game_bottom_nav.dart';
+import 'package:blink/widgets/sliders/tactile_jelly_switch.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -83,8 +84,8 @@ void main() {
       expect(find.text('SETTINGS & ACCESSIBILITY'), findsOneWidget);
 
       // Toggle sound switch
-      final switches = find.byType(Switch);
-      expect(switches, findsNWidgets(2));
+      final switches = find.byType(TactileJellySwitch);
+      expect(switches, findsAtLeastNWidgets(2));
       await tester.tap(switches.first, warnIfMissed: false);
       await tester.pump(const Duration(milliseconds: 100));
     });
@@ -93,8 +94,8 @@ void main() {
       final router = GoRouter(
         initialLocation: '/daily-shift',
         routes: [
-          GoRoute(path: '/world', builder: (_, __) => const Scaffold(body: Text('World Screen'))),
-          GoRoute(path: '/daily-shift', builder: (_, __) => const DailyShiftScreen()),
+          GoRoute(path: '/world', builder: (context, state) => const Scaffold(body: Text('World Screen'))),
+          GoRoute(path: '/daily-shift', builder: (context, state) => const DailyShiftScreen()),
         ],
       );
 

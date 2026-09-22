@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/audio_service.dart';
 
 /// Premium Tactile 3D Button for BLINK
 /// Features:
@@ -305,6 +306,7 @@ class _TactileButtonState extends State<TactileButton> with SingleTickerProvider
   void _handleTapDown(TapDownDetails _) {
     _controller.forward();
     HapticFeedback.lightImpact();
+    AudioService().playUiClick();
   }
 
   void _handleTapUp(TapUpDetails _) {

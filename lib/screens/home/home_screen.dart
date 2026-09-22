@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/audio_service.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
@@ -34,6 +34,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
+    AudioService().startAmbientMusic();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2800),
