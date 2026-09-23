@@ -32,6 +32,8 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       lastPlayedDate: lastPlayed,
       onboardingComplete: prefs.getBool('onboardingComplete') ?? false,
       soundEnabled: prefs.getBool('soundEnabled') ?? true,
+      musicEnabled: prefs.getBool('musicEnabled') ?? true,
+      sfxEnabled: prefs.getBool('sfxEnabled') ?? true,
       hapticEnabled: prefs.getBool('hapticEnabled') ?? true,
       musicVolume: prefs.getDouble('musicVolume') ?? 0.5,
       sfxVolume: prefs.getDouble('sfxVolume') ?? 0.8,
@@ -48,8 +50,13 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     );
 
     AudioService().setSoundEnabled(state.soundEnabled);
+    AudioService().setMusicEnabled(state.musicEnabled);
+    AudioService().setSfxEnabled(state.sfxEnabled);
     AudioService().setMusicVolume(state.musicVolume);
     AudioService().setSfxVolume(state.sfxVolume);
+    if (state.soundEnabled && state.musicEnabled && state.musicVolume > 0) {
+      AudioService().startAmbientMusic();
+    }
   }
 
   Future<void> _saveState() async {
@@ -70,6 +77,8 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     }
     await prefs.setBool('onboardingComplete', state.onboardingComplete);
     await prefs.setBool('soundEnabled', state.soundEnabled);
+    await prefs.setBool('musicEnabled', state.musicEnabled);
+    await prefs.setBool('sfxEnabled', state.sfxEnabled);
     await prefs.setBool('hapticEnabled', state.hapticEnabled);
     await prefs.setDouble('musicVolume', state.musicVolume);
     await prefs.setDouble('sfxVolume', state.sfxVolume);
@@ -207,6 +216,20 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     final next = !state.soundEnabled;
     state = state.copyWith(soundEnabled: next);
     AudioService().setSoundEnabled(next);
+    _saveState();
+  }
+
+  void toggleMusic() {
+    final next = !state.musicEnabled;
+    state = state.copyWith(musicEnabled: next);
+    AudioService().setMusicEnabled(next);
+    _saveState();
+  }
+
+  void toggleSfx() {
+    final next = !state.sfxEnabled;
+    state = state.copyWith(sfxEnabled: next);
+    AudioService().setSfxEnabled(next);
     _saveState();
   }
 

@@ -39,29 +39,29 @@ class CandyTopBar extends ConsumerWidget {
         color: AppColors.surface,
         border: const Border(
           bottom: BorderSide(
-            color: Color(0xFF090D1A),
-            width: 2.5,
+            color: Color(0xFF1E2844),
+            width: 1.0,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.55),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 6,
+            offset: const Offset(0, 1.5),
           ),
         ],
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // ──── 1. 3D MAIL BUTTON ────
               TactileButton.circle(
-                size: 40,
+                size: 36,
                 faceColorTop: const Color(0xFF252E4C),
                 faceColorBottom: const Color(0xFF13182B),
                 rimColor: const Color(0xFF080C18),
@@ -258,7 +258,7 @@ class CandyTopBar extends ConsumerWidget {
 
               // ──── 5. 3D SETTINGS BUTTON ────
               TactileButton.circle(
-                size: 40,
+                size: 36,
                 faceColorTop: const Color(0xFF252E4C),
                 faceColorBottom: const Color(0xFF13182B),
                 rimColor: const Color(0xFF080C18),
@@ -345,7 +345,7 @@ class _TactilePillState extends State<_TactilePill> with SingleTickerProviderSta
           return Transform.translate(
             offset: Offset(0, pushDown),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
                 gradient: const LinearGradient(
@@ -461,8 +461,8 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
 
   @override
   Widget build(BuildContext context) {
-    const size = 46.0;
-    const rimHeight = 4.0;
+    const size = 38.0;
+    const rimHeight = 3.0;
 
     return GestureDetector(
       onTapDown: _onTapDown,
@@ -477,7 +477,7 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
 
           return SizedBox(
             width: size,
-            height: size + rimHeight + 6, // extra space for bottom star tag
+            height: size + rimHeight + 2,
             child: Stack(
               clipBehavior: Clip.none,
               alignment: Alignment.topCenter,
@@ -494,13 +494,13 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.cyan.withValues(alpha: 0.4),
-                          blurRadius: 8.0 - (t * 4.0),
+                          blurRadius: 6.0 - (t * 3.0),
                           spreadRadius: 1,
                         ),
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.5),
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
                         ),
                       ],
                     ),
@@ -522,11 +522,11 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
                       ),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.7),
-                        width: 1.5,
+                        width: 1.2,
                       ),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(2.5),
+                      padding: const EdgeInsets.all(2.0),
                       child: ClipOval(
                         child: Container(
                           color: const Color(0xFF121729),
@@ -536,12 +536,12 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
                               // Top highlight arc
                               Positioned(
                                 top: 1,
-                                left: 6,
-                                right: 6,
-                                height: 16,
+                                left: 5,
+                                right: 5,
+                                height: 12,
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    borderRadius: const BorderRadius.all(Radius.elliptical(16, 8)),
+                                    borderRadius: const BorderRadius.all(Radius.elliptical(12, 6)),
                                     gradient: LinearGradient(
                                       begin: Alignment.topCenter,
                                       end: Alignment.bottomCenter,
@@ -556,7 +556,7 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
                               const Icon(
                                 Icons.person_rounded,
                                 color: AppColors.cyan,
-                                size: 24,
+                                size: 20,
                               ),
                             ],
                           ),
@@ -568,16 +568,16 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
 
                 // 3. Level Star Tag
                 Positioned(
-                  bottom: 0,
+                  bottom: -1,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.0),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [AppColors.nebulaPurpleLight, AppColors.nebulaPurpleDark],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.6),
                         width: 1,
@@ -585,20 +585,20 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.nebulaPurpleRim,
-                          offset: const Offset(0, 1.5),
+                          offset: const Offset(0, 1),
                           blurRadius: 0,
                         ),
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.4),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                          blurRadius: 3,
+                          offset: const Offset(0, 1.5),
                         ),
                       ],
                     ),
                     child: Text(
                       '★${widget.level}',
                       style: GoogleFonts.outfit(
-                        fontSize: 10,
+                        fontSize: 9,
                         fontWeight: FontWeight.w900,
                         color: Colors.white,
                         shadows: [

@@ -16,6 +16,8 @@ class PlayerState extends Equatable {
   final DateTime? lastPlayedDate;
   final bool onboardingComplete;
   final bool soundEnabled;
+  final bool musicEnabled;
+  final bool sfxEnabled;
   final bool hapticEnabled;
   final double musicVolume;
   final double sfxVolume;
@@ -45,6 +47,8 @@ class PlayerState extends Equatable {
     this.lastPlayedDate,
     this.onboardingComplete = false,
     this.soundEnabled = true,
+    this.musicEnabled = true,
+    this.sfxEnabled = true,
     this.hapticEnabled = true,
     this.musicVolume = 0.5,
     this.sfxVolume = 0.8,
@@ -75,6 +79,8 @@ class PlayerState extends Equatable {
     DateTime? lastPlayedDate,
     bool? onboardingComplete,
     bool? soundEnabled,
+    bool? musicEnabled,
+    bool? sfxEnabled,
     bool? hapticEnabled,
     double? musicVolume,
     double? sfxVolume,
@@ -104,6 +110,8 @@ class PlayerState extends Equatable {
       lastPlayedDate: lastPlayedDate ?? this.lastPlayedDate,
       onboardingComplete: onboardingComplete ?? this.onboardingComplete,
       soundEnabled: soundEnabled ?? this.soundEnabled,
+      musicEnabled: musicEnabled ?? this.musicEnabled,
+      sfxEnabled: sfxEnabled ?? this.sfxEnabled,
       hapticEnabled: hapticEnabled ?? this.hapticEnabled,
       musicVolume: musicVolume ?? this.musicVolume,
       sfxVolume: sfxVolume ?? this.sfxVolume,
@@ -128,9 +136,9 @@ class PlayerState extends Equatable {
         displayName, level, xp, xpToNextLevel, gems, totalChallenges,
         correctAnswers, bestCombo, currentStreak, bestStreak,
         bestReactionTimeMs, lastPlayedDate, onboardingComplete,
-        soundEnabled, hapticEnabled, musicVolume, sfxVolume, worldLevel,
-        observerId, selectedAvatarId, selectedFrameId, country,
-        voiceEnabled, monoAudio, audioBalance, bassWarmth, sparkleSoftness,
+        soundEnabled, musicEnabled, sfxEnabled, hapticEnabled, musicVolume,
+        sfxVolume, worldLevel, observerId, selectedAvatarId, selectedFrameId,
+        country, voiceEnabled, monoAudio, audioBalance, bassWarmth, sparkleSoftness,
       ];
 }
 

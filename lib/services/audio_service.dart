@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 
 /// Audio service for BLINK
 /// Handles synthesized cosmic sound effects and looped ambient space music
+/// with periodic ambient rest intervals and global cross-screen persistence.
 class AudioService {
   static final AudioService _instance = AudioService._();
   factory AudioService() => _instance;
@@ -10,6 +12,8 @@ class AudioService {
 
   bool _initialized = false;
   bool _soundEnabled = true;
+  bool _musicEnabled = true;
+  bool _sfxEnabled = true;
   double _musicVolume = 0.45; // Gentle, toe-tapping casual music level
   double _sfxVolume = 0.82;   // Crisp, juicy, non-piercing SFX level
 
@@ -18,8 +22,16 @@ class AudioService {
   int _sfxIndex = 0;
   static const int _poolSize = 4;
 
+  // Periodic ambient rest/play cycle
+  Timer? _musicCycleTimer;
+  bool _isInPausePhase = false;
+  static const Duration playDuration = Duration(seconds: 45);
+  static const Duration pauseDuration = Duration(seconds: 12);
+
   static AudioService get instance => _instance;
   bool get isSoundEnabled => _soundEnabled;
+  bool get isMusicEnabled => _musicEnabled;
+  bool get isSfxEnabled => _sfxEnabled;
   double get musicVolume => _musicVolume;
   double get sfxVolume => _sfxVolume;
 
@@ -28,9 +40,15 @@ class AudioService {
     _initialized = true;
 
     try {
+      // Configure global audio context so SFX never steals focus or interrupts background music
+      final audioContext = AudioContextConfig(
+        focus: AudioContextConfigFocus.mixWithOthers,
+      ).build();
+      await AudioPlayer.global.setAudioContext(audioContext);
+
       _musicPlayer = AudioPlayer(playerId: 'blink_music');
       await _musicPlayer?.setReleaseMode(ReleaseMode.loop);
-      await _musicPlayer?.setVolume(_soundEnabled ? _musicVolume : 0.0);
+      await _musicPlayer?.setVolume((_soundEnabled && _musicEnabled) ? _musicVolume : 0.0);
 
       for (int i = 0; i < _poolSize; i++) {
         final p = AudioPlayer(playerId: 'blink_sfx_$i');
@@ -46,19 +64,52 @@ class AudioService {
     _soundEnabled = enabled;
     try {
       if (!enabled) {
+        _musicCycleTimer?.cancel();
+        _isInPausePhase = false;
         _musicPlayer?.pause();
       } else {
-        _musicPlayer?.setVolume(_musicVolume);
-        _musicPlayer?.resume();
+        if (_musicEnabled && _musicVolume > 0) {
+          startAmbientMusic();
+        }
       }
     } catch (_) {}
+  }
+
+  void setMusicEnabled(bool enabled) {
+    _musicEnabled = enabled;
+    try {
+      if (!enabled) {
+        _musicCycleTimer?.cancel();
+        _isInPausePhase = false;
+        _musicPlayer?.pause();
+      } else {
+        if (_soundEnabled && _musicVolume > 0) {
+          _isInPausePhase = false;
+          startAmbientMusic();
+        }
+      }
+    } catch (_) {}
+  }
+
+  void setSfxEnabled(bool enabled) {
+    _sfxEnabled = enabled;
   }
 
   void setMusicVolume(double vol) {
     _musicVolume = vol.clamp(0.0, 1.0);
     try {
-      if (_soundEnabled) {
-        _musicPlayer?.setVolume(_musicVolume);
+      if (_musicVolume <= 0.0) {
+        _musicCycleTimer?.cancel();
+        _isInPausePhase = false;
+        _musicPlayer?.setVolume(0.0);
+        _musicPlayer?.pause();
+      } else {
+        if (_soundEnabled && _musicEnabled) {
+          _musicPlayer?.setVolume(_musicVolume);
+          if (_musicPlayer?.state != PlayerState.playing && !_isInPausePhase) {
+            startAmbientMusic();
+          }
+        }
       }
     } catch (_) {}
   }
@@ -68,27 +119,83 @@ class AudioService {
   }
 
   Future<void> startAmbientMusic() async {
-    if (!_soundEnabled) return;
+    if (!_soundEnabled || !_musicEnabled || _musicVolume <= 0) return;
     try {
       if (_musicPlayer == null) await init();
-      // If already playing smoothly, don't interrupt or restart
-      if (_musicPlayer?.state == PlayerState.playing) return;
+      // If currently resting in the scheduled ambient pause phase, keep resting
+      if (_isInPausePhase) return;
+
+      // If already playing smoothly, ensure cycle timer is running and don't interrupt
+      if (_musicPlayer?.state == PlayerState.playing) {
+        _ensureCycleTimerRunning();
+        return;
+      }
+
       await _musicPlayer?.setVolume(_musicVolume);
       await _musicPlayer?.play(AssetSource('audio/ambient_music.wav'));
+      _scheduleMusicCycle();
     } catch (_) {}
+  }
+
+  void _ensureCycleTimerRunning() {
+    if (_musicCycleTimer == null || !_musicCycleTimer!.isActive) {
+      _scheduleMusicCycle();
+    }
+  }
+
+  bool get _isTestEnvironment {
+    try {
+      return Platform.environment.containsKey('FLUTTER_TEST');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _scheduleMusicCycle() {
+    _musicCycleTimer?.cancel();
+    _isInPausePhase = false;
+    if (_isTestEnvironment) return;
+
+    // After playDuration, briefly pause to give a gentle cosmic ambient breather
+    _musicCycleTimer = Timer(playDuration, () async {
+      if (!_soundEnabled || !_musicEnabled || _musicVolume <= 0) return;
+      _isInPausePhase = true;
+      try {
+        await _musicPlayer?.pause();
+      } catch (_) {}
+
+      // After pauseDuration, start playing again
+      _musicCycleTimer = Timer(pauseDuration, () async {
+        if (!_soundEnabled || !_musicEnabled || _musicVolume <= 0) return;
+        _isInPausePhase = false;
+        try {
+          await _musicPlayer?.setVolume(_musicVolume);
+          await _musicPlayer?.resume();
+          _scheduleMusicCycle();
+        } catch (_) {
+          startAmbientMusic();
+        }
+      });
+    });
   }
 
   Future<void> pauseMusic() async {
     try {
+      _musicCycleTimer?.cancel();
+      _isInPausePhase = false;
       await _musicPlayer?.pause();
     } catch (_) {}
   }
 
   Future<void> resumeMusic() async {
-    if (!_soundEnabled) return;
+    if (!_soundEnabled || !_musicEnabled || _musicVolume <= 0) return;
     try {
+      _isInPausePhase = false;
       await _musicPlayer?.resume();
-    } catch (_) {}
+      _scheduleMusicCycle();
+    } catch (_) {
+      startAmbientMusic();
+    }
   }
 
   Future<void> playUiClick() async => _playSfx('ui_click');
@@ -104,7 +211,7 @@ class AudioService {
   Future<void> playChestOpen() async => _playSfx('chest_open');
 
   Future<void> _playSfx(String name) async {
-    if (!_soundEnabled || _sfxVolume <= 0) return;
+    if (!_soundEnabled || !_sfxEnabled || _sfxVolume <= 0) return;
     try {
       if (_sfxPlayers.isEmpty) await init();
       if (_sfxPlayers.isEmpty) return;
@@ -120,6 +227,7 @@ class AudioService {
 
   void dispose() {
     try {
+      _musicCycleTimer?.cancel();
       _musicPlayer?.dispose();
       for (final p in _sfxPlayers) {
         p.dispose();

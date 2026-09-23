@@ -595,16 +595,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                     TactileJellySwitch(
-                      value: player.soundEnabled,
-                      onChanged: (_) => notifier.toggleSound(),
+                      value: player.musicEnabled,
+                      onChanged: (_) => notifier.toggleMusic(),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 TactileJellySlider(
-                  value: player.soundEnabled ? player.musicVolume : 0.0,
+                  value: player.musicEnabled ? player.musicVolume : 0.0,
                   onChanged: (val) {
-                    if (!player.soundEnabled) notifier.toggleSound();
+                    if (!player.musicEnabled) notifier.toggleMusic();
                     notifier.setMusicVolume(val);
                   },
                 ),
@@ -632,16 +632,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
                     ),
                     TactileJellySwitch(
-                      value: player.soundEnabled,
-                      onChanged: (_) => notifier.toggleSound(),
+                      value: player.sfxEnabled,
+                      onChanged: (_) => notifier.toggleSfx(),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
                 TactileJellySlider(
-                  value: player.soundEnabled ? player.sfxVolume : 0.0,
+                  value: player.sfxEnabled ? player.sfxVolume : 0.0,
                   onChanged: (val) {
-                    if (!player.soundEnabled) notifier.toggleSound();
+                    if (!player.sfxEnabled) notifier.toggleSfx();
                     notifier.setSfxVolume(val);
                   },
                 ),

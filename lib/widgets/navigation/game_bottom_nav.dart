@@ -45,10 +45,11 @@ class GameBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: SizedBox(
-            height: 56,
+            height: 48,
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 _build3dTab(context, 0, Icons.map_rounded, 'MAP', '/world'),
                 const SizedBox(width: 8),
@@ -105,43 +106,73 @@ class _TactileNavTab extends StatefulWidget {
   State<_TactileNavTab> createState() => _TactileNavTabState();
 }
 
-class _TactileNavTabState extends State<_TactileNavTab> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+class _TactileNavTabState extends State<_TactileNavTab> with TickerProviderStateMixin {
+  late AnimationController _pressController;
+  late AnimationController _bounceController;
+  late Animation<double> _bounceAnimation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
+    _pressController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 80),
     );
+
+    _bounceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+    );
+
+    _bounceAnimation = CurvedAnimation(
+      parent: _bounceController,
+      curve: Curves.elasticOut,
+    );
+
+    if (widget.isSelected) {
+      _bounceController.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _TactileNavTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isSelected && !oldWidget.isSelected) {
+      _bounceController.forward(from: 0.0);
+    } else if (!widget.isSelected && oldWidget.isSelected) {
+      _bounceController.reset();
+    }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pressController.dispose();
+    _bounceController.dispose();
     super.dispose();
   }
 
   void _onTapDown(TapDownDetails _) {
-    _controller.forward();
+    _pressController.forward();
     HapticFeedback.lightImpact();
     AudioService().playUiClick();
   }
 
   void _onTapUp(TapUpDetails _) {
-    _controller.reverse();
+    _pressController.reverse();
+    if (widget.isSelected) {
+      _bounceController.forward(from: 0.0);
+    }
     widget.onTap();
   }
 
   void _onTapCancel() {
-    _controller.reverse();
+    _pressController.reverse();
   }
 
   @override
   Widget build(BuildContext context) {
     const rimHeight = 4.0;
-    const height = 48.0;
+    const height = 44.0;
     final isSelected = widget.isSelected;
 
     return GestureDetector(
@@ -150,15 +181,23 @@ class _TactileNavTabState extends State<_TactileNavTab> with SingleTickerProvide
       onTapCancel: _onTapCancel,
       behavior: HitTestBehavior.opaque,
       child: AnimatedBuilder(
-        animation: _controller,
+        animation: Listenable.merge([_pressController, _bounceController]),
         builder: (context, _) {
-          final t = _controller.value;
+          final t = _pressController.value;
           final pushDown = t * (rimHeight - 0.5);
+          final bounceVal = widget.isSelected ? _bounceAnimation.value : 0.0;
+          // Scale reaches ~1.22 at peak and settles smoothly at 1.0
+          final orbScale = widget.isSelected ? (0.35 + 0.65 * bounceVal).clamp(0.0, 1.35) : 1.0;
+          // Vertical spring: pops up from pushDown to -16 (with elastic overshoot)
+          final orbTop = widget.isSelected ? (pushDown - 16.0 * bounceVal.clamp(0.0, 1.3)) : pushDown;
+          // Subtle playful wobble tilt as it pops out
+          final orbWobble = widget.isSelected ? (1.0 - bounceVal).clamp(-0.5, 0.5) * 0.12 : 0.0;
 
           return SizedBox(
             height: height + rimHeight,
             child: Stack(
               clipBehavior: Clip.none,
+              alignment: Alignment.center,
               children: [
                 // ──── 1. BOTTOM 3D RIM (Extruded Base) ────
                 Positioned(
@@ -173,19 +212,19 @@ class _TactileNavTabState extends State<_TactileNavTab> with SingleTickerProvide
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: AppColors.cyan.withValues(alpha: 0.4),
-                                blurRadius: 8.0 - (t * 4.0),
-                                spreadRadius: 1,
+                                color: AppColors.cyan.withValues(alpha: 0.45),
+                                blurRadius: 10.0 - (t * 4.0),
+                                spreadRadius: 1.5,
                               ),
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.45),
-                                blurRadius: 4,
+                                color: Colors.black.withValues(alpha: 0.5),
+                                blurRadius: 5,
                                 offset: const Offset(0, 2),
                               ),
                             ]
                           : [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.3),
+                                color: Colors.black.withValues(alpha: 0.35),
                                 blurRadius: 3,
                                 offset: const Offset(0, 1.5),
                               ),
@@ -222,7 +261,7 @@ class _TactileNavTabState extends State<_TactileNavTab> with SingleTickerProvide
                             ),
                       border: Border.all(
                         color: isSelected
-                            ? Colors.white.withValues(alpha: 0.65)
+                            ? Colors.white.withValues(alpha: 0.7)
                             : Colors.white.withValues(alpha: 0.12),
                         width: 1.2,
                       ),
@@ -248,7 +287,7 @@ class _TactileNavTabState extends State<_TactileNavTab> with SingleTickerProvide
                                   begin: Alignment.topCenter,
                                   end: Alignment.bottomCenter,
                                   colors: [
-                                    Colors.white.withValues(alpha: isSelected ? 0.55 : 0.25),
+                                    Colors.white.withValues(alpha: isSelected ? 0.55 : 0.22),
                                     Colors.white.withValues(alpha: 0.02),
                                   ],
                                 ),
@@ -256,56 +295,150 @@ class _TactileNavTabState extends State<_TactileNavTab> with SingleTickerProvide
                             ),
                           ),
 
-                          // Inner Content (Icon + Label)
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                widget.icon,
-                                size: isSelected ? 22 : 20,
-                                color: isSelected ? Colors.white : AppColors.textMuted,
-                                shadows: isSelected
-                                    ? [
-                                        Shadow(
-                                          color: AppColors.cosmicCyanRim,
-                                          offset: const Offset(0, 1.5),
-                                          blurRadius: 2,
-                                        ),
-                                        Shadow(
-                                          color: Colors.black.withValues(alpha: 0.5),
-                                          offset: const Offset(0, 2),
-                                          blurRadius: 3,
-                                        ),
-                                      ]
-                                    : null,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                widget.label,
-                                style: GoogleFonts.outfit(
-                                  fontSize: isSelected ? 10.5 : 9.5,
-                                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
-                                  color: isSelected ? Colors.white : AppColors.textMuted,
-                                  letterSpacing: 0.8,
-                                  shadows: isSelected
-                                      ? [
-                                          Shadow(
-                                            color: AppColors.cosmicCyanRim,
-                                            offset: const Offset(0, 1),
-                                            blurRadius: 2,
-                                          ),
-                                        ]
-                                      : null,
+                          // Inner Content:
+                          // If ACTIVE: prominent, bold text showing clearly with room beneath the protruding 3D icon
+                          // If INACTIVE: icon + label
+                          if (isSelected)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 12),
+                              child: Transform.scale(
+                                scale: (0.85 + 0.15 * bounceVal).clamp(0.5, 1.15),
+                                child: Text(
+                                  widget.label,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 1.2,
+                                    shadows: [
+                                      Shadow(
+                                        color: AppColors.cosmicCyanRim,
+                                        offset: const Offset(0, 1.5),
+                                        blurRadius: 2,
+                                      ),
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.5),
+                                        offset: const Offset(0, 2),
+                                        blurRadius: 3,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
+                            )
+                          else
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  widget.icon,
+                                  size: 19,
+                                  color: const Color(0xFF8896B8),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.label,
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 9.0,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF8896B8),
+                                    letterSpacing: 0.6,
+                                  ),
+                                ),
+                              ],
+                            ),
                         ],
                       ),
                     ),
                   ),
                 ),
+
+                // ──── 3. 3D FLOATING ICON POPPING OUTSIDE BUTTON (When Active) ────
+                if (isSelected)
+                  Positioned(
+                    top: orbTop, // Bouncy spring vertical position!
+                    child: Transform.rotate(
+                      angle: orbWobble,
+                      child: Transform.scale(
+                        scale: orbScale,
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: const RadialGradient(
+                              center: Alignment(-0.25, -0.4),
+                              radius: 0.95,
+                              colors: [
+                                Color(0xFF94FBFF), // Brilliant cyan highlight dome
+                                Color(0xFF00D2FF), // Vivid cyan core
+                                Color(0xFF00759E), // Deep 3D rim shadow
+                              ],
+                            ),
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 1.8,
+                            ),
+                            boxShadow: [
+                              // Intense neon cyan aura
+                              BoxShadow(
+                                color: AppColors.cyan.withValues(alpha: 0.7),
+                                blurRadius: 10,
+                                spreadRadius: 1,
+                                offset: const Offset(0, 1),
+                              ),
+                              // Drop shadow cast downward onto button pill
+                              BoxShadow(
+                                color: const Color(0xFF001A30).withValues(alpha: 0.75),
+                                blurRadius: 5,
+                                offset: const Offset(0, 3.5),
+                              ),
+                            ],
+                          ),
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Top specular shine crescent
+                              Positioned(
+                                top: 2,
+                                left: 5,
+                                right: 5,
+                                height: 13,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.8),
+                                        Colors.white.withValues(alpha: 0.0),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                              // 3D Embossed Icon
+                              Icon(
+                                widget.icon,
+                                size: 20,
+                                color: Colors.white,
+                                shadows: const [
+                                  Shadow(
+                                    color: Color(0xFF004968),
+                                    offset: Offset(0, 1.5),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           );
