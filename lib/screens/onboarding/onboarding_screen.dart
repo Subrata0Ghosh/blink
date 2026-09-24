@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,10 +19,34 @@ class OnboardingScreen extends ConsumerStatefulWidget {
   ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   final TextEditingController _nameController = TextEditingController();
   int _currentPage = 0;
+
+  late final AnimationController _emblemRotateController;
+  late final AnimationController _emblemFloatController;
+  late final AnimationController _emblemShimmerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _emblemRotateController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 14),
+    )..repeat();
+
+    _emblemFloatController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
+
+    _emblemShimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    )..repeat();
+  }
 
   final List<_OnboardingPage> _pages = [
     _OnboardingPage(
@@ -49,6 +74,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   void dispose() {
+    _emblemRotateController.dispose();
+    _emblemFloatController.dispose();
+    _emblemShimmerController.dispose();
     _pageController.dispose();
     _nameController.dispose();
     super.dispose();
@@ -211,121 +239,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 3D Floating Astral Pedestal Cradling Artwork
-          SizedBox(
-            width: 170,
-            height: 170,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Ground aura shadow
-                Positioned(
-                  bottom: 6,
-                  child: Container(
-                    width: 140,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: page.gradientColors[0].withValues(alpha: 0.45),
-                          blurRadius: 36,
-                          spreadRadius: 6,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // 3D Beveled Pedestal Ring
-                Container(
-                  width: 148,
-                  height: 148,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF070B19),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.65),
-                      width: 2.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: page.gradientColors[0].withValues(alpha: 0.45),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.6),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Stack(
-                      fit: StackFit.expand,
-                      alignment: Alignment.center,
-                      children: [
-                        if (page.assetPath != null)
-                          Image.asset(
-                            page.assetPath!,
-                            fit: BoxFit.cover,
-                          )
-                        else
-                          Center(
-                            child: Icon(
-                              page.icon,
-                              size: 58,
-                              color: page.gradientColors[0],
-                            ),
-                          ),
-
-                        // Curved top glass specular sheen along the circular perimeter
-                        Positioned(
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          height: 64,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.white.withValues(alpha: 0.38),
-                                  Colors.white.withValues(alpha: 0.0),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // Bottom inner sphere shadow for 3D depth
-                        Positioned(
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          height: 40,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.bottomCenter,
-                                end: Alignment.topCenter,
-                                colors: [
-                                  Colors.black.withValues(alpha: 0.45),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // 3D Floating Living Celestial Emblem with Orbiting Energy Rings
+          _buildAnimatedEmblem(page),
           const SizedBox(height: 44),
           // 3D Embossed Title
           Text(
@@ -364,6 +279,185 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           const SizedBox(height: 50),
         ],
       ),
+    );
+  }
+
+  Widget _buildAnimatedEmblem(_OnboardingPage page) {
+    return AnimatedBuilder(
+      animation: Listenable.merge([
+        _emblemRotateController,
+        _emblemFloatController,
+        _emblemShimmerController,
+      ]),
+      builder: (context, _) {
+        final floatY = sin(_emblemFloatController.value * 2 * pi) * 7.0;
+        final floatScale = 1.0 - (sin(_emblemFloatController.value * 2 * pi) * 0.03);
+        final rotateAngle = _emblemRotateController.value * 2 * pi;
+        final shimmerPos = (_emblemShimmerController.value * 3.0) - 1.0;
+
+        return SizedBox(
+          width: 210,
+          height: 210,
+          child: Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              // 1. Dynamic Ground Aura Shadow
+              Positioned(
+                bottom: 2 - (floatY * 0.6),
+                child: Container(
+                  width: 140 * floatScale,
+                  height: 24 * floatScale,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: page.gradientColors[0].withValues(alpha: 0.50),
+                        blurRadius: 36,
+                        spreadRadius: 8,
+                      ),
+                      BoxShadow(
+                        color: AppColors.cyan.withValues(alpha: 0.30),
+                        blurRadius: 24,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 2. Rotating Celestial Orbital Rings & Starlight Nodes
+              Positioned(
+                top: floatY,
+                child: CustomPaint(
+                  painter: _CelestialRingsPainter(
+                    rotation: rotateAngle,
+                    primaryColor: page.gradientColors[0],
+                    secondaryColor: page.gradientColors.length > 1 ? page.gradientColors[1] : AppColors.cyan,
+                    pulse: 0.85 + (sin(_emblemFloatController.value * 2 * pi) * 0.15),
+                  ),
+                  size: const Size(204, 204),
+                ),
+              ),
+
+              // 3. Central Glass Pedestal with Sheen Sweep & Artwork
+              Positioned(
+                top: 28 + floatY,
+                child: Container(
+                  width: 148,
+                  height: 148,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(0xFF070B19),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.75),
+                      width: 2.2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: page.gradientColors[0].withValues(alpha: 0.55),
+                        blurRadius: 24,
+                        spreadRadius: 3,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Stack(
+                      fit: StackFit.expand,
+                      alignment: Alignment.center,
+                      children: [
+                        // Core artwork
+                        if (page.assetPath != null)
+                          Image.asset(
+                            page.assetPath!,
+                            fit: BoxFit.cover,
+                          )
+                        else
+                          Center(
+                            child: Icon(
+                              page.icon,
+                              size: 58,
+                              color: page.gradientColors[0],
+                            ),
+                          ),
+
+                        // Moving Specular Starlight Shimmer Sweep
+                        Positioned.fill(
+                          child: Transform.rotate(
+                            angle: pi / 4,
+                            child: Transform.translate(
+                              offset: Offset(shimmerPos * 180, 0),
+                              child: Container(
+                                width: 50,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.white.withValues(alpha: 0.30),
+                                      Colors.white.withValues(alpha: 0.60),
+                                      Colors.white.withValues(alpha: 0.30),
+                                      Colors.transparent,
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Curved Top Glass Specular Rim Sheen
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: 64,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.white.withValues(alpha: 0.42),
+                                  Colors.white.withValues(alpha: 0.0),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Bottom Inner Sphere Shadow for Rich 3D Sphere Depth
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: 44,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: [
+                                  Colors.black.withValues(alpha: 0.55),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -493,4 +587,94 @@ class _OnboardingPage {
     this.assetPath,
     required this.gradientColors,
   });
+}
+
+/// Custom painter for the rotating celestial energy rings surrounding the onboarding emblem
+class _CelestialRingsPainter extends CustomPainter {
+  final double rotation;
+  final Color primaryColor;
+  final Color secondaryColor;
+  final double pulse;
+
+  _CelestialRingsPainter({
+    required this.rotation,
+    required this.primaryColor,
+    required this.secondaryColor,
+    required this.pulse,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final outerRadius = (size.width / 2) * 0.94;
+    final innerRadius = (size.width / 2) * 0.82;
+
+    // 1. Outer Ambient Glow Halo
+    final auraPaint = Paint()
+      ..color = primaryColor.withValues(alpha: 0.18 * pulse)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16);
+    canvas.drawCircle(center, outerRadius * 0.95, auraPaint);
+
+    // 2. Outer Clockwise Orbiting Dashed Ring
+    final outerRingPaint = Paint()
+      ..color = primaryColor.withValues(alpha: 0.65 * pulse)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.8;
+
+    const segmentCount = 12;
+    const sweep = (2 * pi) / segmentCount;
+    for (int i = 0; i < segmentCount; i++) {
+      if (i % 2 == 0) {
+        final startAngle = rotation + (i * sweep);
+        canvas.drawArc(
+          Rect.fromCircle(center: center, radius: outerRadius),
+          startAngle,
+          sweep * 0.70,
+          false,
+          outerRingPaint,
+        );
+      }
+    }
+
+    // 3. Inner Counter-Clockwise Neon Ring with Rune Notches
+    final innerRingPaint = Paint()
+      ..color = secondaryColor.withValues(alpha: 0.50 * pulse)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+
+    for (int i = 0; i < 8; i++) {
+      final startAngle = -rotation * 0.8 + (i * (2 * pi / 8));
+      canvas.drawArc(
+        Rect.fromCircle(center: center, radius: innerRadius),
+        startAngle,
+        (2 * pi / 8) * 0.45,
+        false,
+        innerRingPaint,
+      );
+    }
+
+    // 4. Orbiting Starlight Nodes on Outer Perimeter
+    const nodeCount = 4;
+    final nodeGlow = Paint()
+      ..color = primaryColor.withValues(alpha: 0.8)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+    final nodeCore = Paint()..color = Colors.white;
+
+    for (int i = 0; i < nodeCount; i++) {
+      final angle = rotation + (i * (2 * pi / nodeCount));
+      final nx = center.dx + (outerRadius * cos(angle));
+      final ny = center.dy + (outerRadius * sin(angle));
+      final nodePos = Offset(nx, ny);
+
+      canvas.drawCircle(nodePos, 4.5 * pulse, nodeGlow);
+      canvas.drawCircle(nodePos, 2.2, nodeCore);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CelestialRingsPainter old) =>
+      old.rotation != rotation ||
+      old.pulse != pulse ||
+      old.primaryColor != primaryColor ||
+      old.secondaryColor != secondaryColor;
 }

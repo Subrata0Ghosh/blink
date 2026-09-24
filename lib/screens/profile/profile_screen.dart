@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../models/player_state.dart';
 import '../../services/game_state_service.dart';
 import '../../services/audio_service.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/characters/observer_avatar_badge.dart';
 import '../../widgets/navigation/game_bottom_nav.dart';
@@ -256,6 +257,121 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         TactileJellySwitch(
                           value: player.hapticEnabled,
                           onChanged: (_) => notifier.toggleHaptic(),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // ──── COSMIC NOTIFICATIONS & REMINDERS ────
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.glassBorder),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E263D),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.notifications_active_rounded,
+                                color: AppColors.cyan,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Cosmic Notifications',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                Text(
+                                  'World shifts & energy alerts',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        // Test Button
+                        GestureDetector(
+                          onTap: () async {
+                            HapticFeedback.mediumImpact();
+                            AudioService().playUiClick();
+                            await NotificationService().showInstantNotification();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    children: [
+                                      const Icon(Icons.notifications_active_rounded, color: AppColors.cyan, size: 20),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Cosmic notification sent! Check drawer.',
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: const Color(0xFF1B233A),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                    side: const BorderSide(color: AppColors.cyan, width: 1.2),
+                                  ),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00E5FF), Color(0xFF007A99)],
+                              ),
+                              borderRadius: BorderRadius.circular(14),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.cyan.withValues(alpha: 0.35),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Text(
+                              'TEST',
+                              style: GoogleFonts.outfit(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),

@@ -7,6 +7,7 @@ class ObserverAvatarBadge extends StatelessWidget {
   final String frameId;
   final double size;
   final bool showShadow;
+  final bool isCircle;
 
   const ObserverAvatarBadge({
     super.key,
@@ -14,17 +15,21 @@ class ObserverAvatarBadge extends StatelessWidget {
     required this.frameId,
     this.size = 64,
     this.showShadow = true,
+    this.isCircle = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final frameData = _getFrameData(frameId);
+    final borderRadius = isCircle ? null : BorderRadius.circular(size * 0.28);
+    final innerRadius = isCircle ? null : BorderRadius.circular(size * 0.24);
 
     return Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(size * 0.28),
+        borderRadius: borderRadius,
+        shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -45,11 +50,12 @@ class ObserverAvatarBadge extends StatelessWidget {
               ]
             : null,
       ),
-      padding: EdgeInsets.all(size * 0.06), // Frame thickness
+      padding: EdgeInsets.all(size * 0.07), // Frame thickness
       child: Container(
         decoration: BoxDecoration(
           color: const Color(0xFF131828),
-          borderRadius: BorderRadius.circular(size * 0.24),
+          borderRadius: innerRadius,
+          shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
         ),
         clipBehavior: Clip.antiAlias,
         child: _buildAvatarContent(),
@@ -60,9 +66,19 @@ class ObserverAvatarBadge extends StatelessWidget {
   Widget _buildAvatarContent() {
     switch (avatarId) {
       case 'nova_happy':
-        return Image.asset(AppAssets.novaHappy, fit: BoxFit.cover);
+        return OverflowBox(
+          maxWidth: size * 1.55,
+          maxHeight: size * 1.55,
+          alignment: const Alignment(0.0, -0.45),
+          child: Image.asset(AppAssets.novaHappy, fit: BoxFit.contain),
+        );
       case 'nova_idle':
-        return Image.asset(AppAssets.novaIdle, fit: BoxFit.cover);
+        return OverflowBox(
+          maxWidth: size * 1.55,
+          maxHeight: size * 1.55,
+          alignment: const Alignment(0.0, -0.45),
+          child: Image.asset(AppAssets.novaIdle, fit: BoxFit.contain),
+        );
       case 'celestial_owl':
         return _buildIconAvatar(
           Icons.visibility_rounded,

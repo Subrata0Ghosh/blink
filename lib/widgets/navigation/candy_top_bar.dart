@@ -7,6 +7,9 @@ import '../../core/theme/app_colors.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
 import '../buttons/tactile_button.dart';
+import '../characters/observer_avatar_badge.dart';
+import '../modals/daily_rewards_modal.dart';
+import '../modals/daily_quests_modal.dart';
 
 /// 3D Tactile Top Bar for BLINK
 /// Features:
@@ -59,7 +62,7 @@ class CandyTopBar extends ConsumerWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // ──── 1. 3D MAIL BUTTON ────
+              // ──── 1. 3D MAIL BUTTON (Daily Quests & Transmissions) ────
               TactileButton.circle(
                 size: 36,
                 faceColorTop: const Color(0xFF252E4C),
@@ -68,16 +71,9 @@ class CandyTopBar extends ConsumerWidget {
                 onTap: onMailTap ??
                     () {
                       triggerHaptic(ref, HapticService.lightTap);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'No new transmissions from the Cosmos!',
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-                          ),
-                          backgroundColor: AppColors.surfaceLight,
-                          behavior: SnackBarBehavior.floating,
-                          duration: const Duration(seconds: 2),
-                        ),
+                      showDialog(
+                        context: context,
+                        builder: (context) => const DailyQuestsModal(),
                       );
                     },
                 child: const Icon(
@@ -94,6 +90,33 @@ class CandyTopBar extends ConsumerWidget {
                 onTap: onLivesTap ??
                     () {
                       triggerHaptic(ref, HapticService.lightTap);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Row(
+                            children: [
+                              const Icon(Icons.favorite_rounded, color: Color(0xFFFF5277), size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Infinite Cosmic Energy! Play without limits.',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          backgroundColor: const Color(0xFF1B233A),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: const BorderSide(color: Color(0xFFFF5277), width: 1.2),
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
                     },
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -151,6 +174,8 @@ class CandyTopBar extends ConsumerWidget {
               // ──── 3. 3D CENTER AVATAR BEZEL ────
               _TactileAvatarBezel(
                 level: player.level,
+                avatarId: player.selectedAvatarId,
+                frameId: player.selectedFrameId,
                 onTap: () {
                   triggerHaptic(ref, HapticService.mediumTap);
                   context.go('/profile');
@@ -164,7 +189,10 @@ class CandyTopBar extends ConsumerWidget {
                 onTap: onGemsTap ??
                     () {
                       triggerHaptic(ref, HapticService.lightTap);
-                      context.go('/collect');
+                      showDialog(
+                        context: context,
+                        builder: (context) => const DailyRewardsModal(),
+                      );
                     },
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -415,10 +443,14 @@ class _TactilePillState extends State<_TactilePill> with SingleTickerProviderSta
 /// 3D Tactile Avatar Medallion with extruded rims and physical tap depression
 class _TactileAvatarBezel extends StatefulWidget {
   final int level;
+  final String avatarId;
+  final String frameId;
   final VoidCallback onTap;
 
   const _TactileAvatarBezel({
     required this.level,
+    this.avatarId = 'nova_happy',
+    this.frameId = 'frame_cyan',
     required this.onTap,
   });
 
@@ -526,40 +558,39 @@ class _TactileAvatarBezelState extends State<_TactileAvatarBezel>
                       ),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.all(2.0),
+                      padding: const EdgeInsets.all(1.5),
                       child: ClipOval(
-                        child: Container(
-                          color: const Color(0xFF121729),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              // Top highlight arc
-                              Positioned(
-                                top: 1,
-                                left: 5,
-                                right: 5,
-                                height: 12,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    borderRadius: const BorderRadius.all(Radius.elliptical(12, 6)),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.white.withValues(alpha: 0.6),
-                                        Colors.white.withValues(alpha: 0.05),
-                                      ],
-                                    ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            ObserverAvatarBadge(
+                              avatarId: widget.avatarId,
+                              frameId: widget.frameId,
+                              size: size - 3,
+                              isCircle: true,
+                              showShadow: false,
+                            ),
+                            // Top highlight arc
+                            Positioned(
+                              top: 1,
+                              left: 5,
+                              right: 5,
+                              height: 10,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.all(Radius.elliptical(10, 5)),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0.55),
+                                      Colors.white.withValues(alpha: 0.0),
+                                    ],
                                   ),
                                 ),
                               ),
-                              const Icon(
-                                Icons.person_rounded,
-                                color: AppColors.cyan,
-                                size: 20,
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
                     ),

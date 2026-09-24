@@ -171,7 +171,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       _isSpawning = true;
     });
     _sceneController.forward(from: 0);
-    _timeLeft = _challenge!.observeTime;
+    final player = ref.read(gameStateProvider);
+    _timeLeft = player.isCalmMode ? (_challenge!.observeTime + 3.5) : _challenge!.observeTime;
 
     // Timer for observation
     _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
@@ -507,14 +508,44 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  _showDebug ? 'DEBUG ROUND $_round / 5' : 'ROUND $_round / 5',
-                  style: GoogleFonts.outfit(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    letterSpacing: 1.0,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _showDebug ? 'DEBUG ROUND $_round / 5' : 'ROUND $_round / 5',
+                      style: GoogleFonts.outfit(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    if (ref.watch(gameStateProvider).isCalmMode)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0077B6).withValues(alpha: 0.35),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF00B4D8), width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.spa_rounded, color: Color(0xFF90E0EF), size: 11),
+                            const SizedBox(width: 3),
+                            Text(
+                              'ZEN',
+                              style: GoogleFonts.outfit(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF90E0EF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
                 if (_combo > 1)
                   Text(

@@ -31,6 +31,12 @@ class PlayerState extends Equatable {
   final double audioBalance;
   final double bassWarmth;
   final double sparkleSoftness;
+  final DateTime? lastDailyRewardDate;
+  final int dailyRewardDay; // 1 to 7
+  final List<String> dailyQuestsClaimed;
+  final int todayShiftsPlayed;
+  final int todayBestCombo;
+  final bool isCalmMode;
 
   const PlayerState({
     this.displayName = 'Observer',
@@ -62,7 +68,26 @@ class PlayerState extends Equatable {
     this.audioBalance = 0.0,
     this.bassWarmth = 0.5,
     this.sparkleSoftness = 0.6,
+    this.lastDailyRewardDate,
+    this.dailyRewardDay = 1,
+    this.dailyQuestsClaimed = const [],
+    this.todayShiftsPlayed = 0,
+    this.todayBestCombo = 0,
+    this.isCalmMode = false,
   });
+
+  /// Check if the 7-day reward is claimable today
+  bool get isDailyRewardAvailable {
+    if (lastDailyRewardDate == null) return true;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final last = DateTime(
+      lastDailyRewardDate!.year,
+      lastDailyRewardDate!.month,
+      lastDailyRewardDate!.day,
+    );
+    return today.isAfter(last);
+  }
 
   PlayerState copyWith({
     String? displayName,
@@ -94,6 +119,12 @@ class PlayerState extends Equatable {
     double? audioBalance,
     double? bassWarmth,
     double? sparkleSoftness,
+    DateTime? lastDailyRewardDate,
+    int? dailyRewardDay,
+    List<String>? dailyQuestsClaimed,
+    int? todayShiftsPlayed,
+    int? todayBestCombo,
+    bool? isCalmMode,
   }) {
     return PlayerState(
       displayName: displayName ?? this.displayName,
@@ -125,6 +156,12 @@ class PlayerState extends Equatable {
       audioBalance: audioBalance ?? this.audioBalance,
       bassWarmth: bassWarmth ?? this.bassWarmth,
       sparkleSoftness: sparkleSoftness ?? this.sparkleSoftness,
+      lastDailyRewardDate: lastDailyRewardDate ?? this.lastDailyRewardDate,
+      dailyRewardDay: dailyRewardDay ?? this.dailyRewardDay,
+      dailyQuestsClaimed: dailyQuestsClaimed ?? this.dailyQuestsClaimed,
+      todayShiftsPlayed: todayShiftsPlayed ?? this.todayShiftsPlayed,
+      todayBestCombo: todayBestCombo ?? this.todayBestCombo,
+      isCalmMode: isCalmMode ?? this.isCalmMode,
     );
   }
 
@@ -139,6 +176,8 @@ class PlayerState extends Equatable {
         soundEnabled, musicEnabled, sfxEnabled, hapticEnabled, musicVolume,
         sfxVolume, worldLevel, observerId, selectedAvatarId, selectedFrameId,
         country, voiceEnabled, monoAudio, audioBalance, bassWarmth, sparkleSoftness,
+        lastDailyRewardDate, dailyRewardDay, dailyQuestsClaimed,
+        todayShiftsPlayed, todayBestCombo, isCalmMode,
       ];
 }
 

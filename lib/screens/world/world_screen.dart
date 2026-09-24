@@ -9,6 +9,8 @@ import '../../services/audio_service.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
+import '../../widgets/characters/observer_avatar_badge.dart';
+import '../../widgets/modals/relics_modal.dart';
 import '../../widgets/navigation/candy_top_bar.dart';
 import '../../widgets/navigation/game_bottom_nav.dart';
 import '../../widgets/particles/particles.dart';
@@ -321,10 +323,111 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
                               pulseValue: _pulseController.value,
                             ),
                             child: Stack(
-                              children: _buildLevelNodes(currentLevel, MediaQuery.of(context).size.width),
+                              children: _buildLevelNodes(
+                                currentLevel,
+                                MediaQuery.of(context).size.width,
+                                player.selectedAvatarId,
+                                player.selectedFrameId,
+                              ),
                             ),
                           );
                         },
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Floating Mystery Portal Button
+                Positioned(
+                  bottom: 16,
+                  right: 16,
+                  child: GestureDetector(
+                    onTap: () {
+                      triggerHaptic(ref, HapticService.mediumTap);
+                      context.push('/mystery');
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF8A2BE2), Color(0xFF4A00E0)],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFD68BFF), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF8A2BE2).withValues(alpha: 0.5),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFD68BFF), size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'MYSTERY PORTAL',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Floating Constellation Codex / Relics Button
+                Positioned(
+                  bottom: 16,
+                  left: 16,
+                  child: GestureDetector(
+                    onTap: () {
+                      triggerHaptic(ref, HapticService.mediumTap);
+                      AudioService().playUiConfirm();
+                      showDialog(
+                        context: context,
+                        builder: (_) => const RelicsModal(),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFB300), Color(0xFFFF6F00)],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF8F00).withValues(alpha: 0.5),
+                            blurRadius: 16,
+                            spreadRadius: 2,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFFFF9C4), size: 20),
+                          const SizedBox(width: 8),
+                          Text(
+                            'RELICS',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -362,7 +465,12 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
     return waypoints;
   }
 
-  List<Widget> _buildLevelNodes(int activeLevel, double screenWidth) {
+  List<Widget> _buildLevelNodes(
+    int activeLevel,
+    double screenWidth,
+    String avatarId,
+    String frameId,
+  ) {
     final List<Widget> nodes = [];
     final waypoints = _getWaypoints(screenWidth);
 
@@ -400,6 +508,8 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
               stars: stars,
               isCurrent: isCurrent,
               isUnlocked: isUnlocked,
+              avatarId: avatarId,
+              frameId: frameId,
               pulseAnimation: _pulseAnimation,
               onTap: () => _showLevelDialog(levelNum, stars, isUnlocked),
             ),
@@ -419,6 +529,8 @@ class _TactileLevelNode extends StatefulWidget {
   final int stars;
   final bool isCurrent;
   final bool isUnlocked;
+  final String avatarId;
+  final String frameId;
   final Animation<double> pulseAnimation;
   final VoidCallback onTap;
 
@@ -427,6 +539,8 @@ class _TactileLevelNode extends StatefulWidget {
     required this.stars,
     required this.isCurrent,
     required this.isUnlocked,
+    this.avatarId = 'nova_happy',
+    this.frameId = 'frame_cyan',
     required this.pulseAnimation,
     required this.onTap,
   });
@@ -521,8 +635,8 @@ class _TactileLevelNodeState extends State<_TactileLevelNode> with SingleTickerP
                   );
                 },
                 child: Container(
-                  width: 26,
-                  height: 26,
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
@@ -531,19 +645,25 @@ class _TactileLevelNodeState extends State<_TactileLevelNode> with SingleTickerP
                       end: Alignment.bottomCenter,
                     ),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.9),
+                      color: Colors.white.withValues(alpha: 0.95),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.cyan.withValues(alpha: 0.75),
-                        blurRadius: 12,
+                        color: AppColors.cyan.withValues(alpha: 0.8),
+                        blurRadius: 14,
                         spreadRadius: 2,
                       ),
                     ],
                   ),
-                  child: const Center(
-                    child: Icon(Icons.person_rounded, color: Colors.white, size: 15),
+                  child: ClipOval(
+                    child: ObserverAvatarBadge(
+                      avatarId: widget.avatarId,
+                      frameId: widget.frameId,
+                      size: 25,
+                      isCircle: true,
+                      showShadow: false,
+                    ),
                   ),
                 ),
               ),

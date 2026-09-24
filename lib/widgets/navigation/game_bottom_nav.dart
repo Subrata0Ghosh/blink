@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/audio_service.dart';
+import '../../services/game_state_service.dart';
+import '../characters/observer_avatar_badge.dart';
 
 /// Unique 3D Tactile Bottom Navigation Dock for BLINK
 /// Features:
@@ -11,7 +14,7 @@ import '../../services/audio_service.dart';
 /// - Active tab: elevated 3D tactile pill button with cosmic cyan gradient, 3D bottom rim, and top specular highlight
 /// - Inactive tabs: tactile 3D button pedestals that compress downward when tapped
 /// - Tactile haptic feedback and spring physics on every tap
-class GameBottomNav extends StatelessWidget {
+class GameBottomNav extends ConsumerWidget {
   final int currentIndex;
 
   const GameBottomNav({
@@ -20,7 +23,8 @@ class GameBottomNav extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final player = ref.watch(gameStateProvider);
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -57,7 +61,22 @@ class GameBottomNav extends StatelessWidget {
                 const SizedBox(width: 8),
                 _build3dTab(context, 2, Icons.storefront_rounded, 'SHOP', '/collect'),
                 const SizedBox(width: 8),
-                _build3dTab(context, 3, Icons.person_rounded, 'PROFILE', '/profile'),
+                _build3dTab(
+                  context,
+                  3,
+                  Icons.person_rounded,
+                  'PROFILE',
+                  '/profile',
+                  customIcon: ClipOval(
+                    child: ObserverAvatarBadge(
+                      avatarId: player.selectedAvatarId,
+                      frameId: player.selectedFrameId,
+                      size: 20,
+                      isCircle: true,
+                      showShadow: false,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -71,13 +90,15 @@ class GameBottomNav extends StatelessWidget {
     int index,
     IconData icon,
     String label,
-    String route,
-  ) {
+    String route, {
+    Widget? customIcon,
+  }) {
     final isSelected = currentIndex == index;
 
     return Expanded(
       child: _TactileNavTab(
         icon: icon,
+        customIcon: customIcon,
         label: label,
         isSelected: isSelected,
         onTap: () {
@@ -90,13 +111,15 @@ class GameBottomNav extends StatelessWidget {
 }
 
 class _TactileNavTab extends StatefulWidget {
-  final IconData icon;
+  final IconData? icon;
+  final Widget? customIcon;
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
 
   const _TactileNavTab({
-    required this.icon,
+    this.icon,
+    this.customIcon,
     required this.label,
     required this.isSelected,
     required this.onTap,
@@ -331,11 +354,18 @@ class _TactileNavTabState extends State<_TactileNavTab> with TickerProviderState
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
-                                  widget.icon,
-                                  size: 19,
-                                  color: const Color(0xFF8896B8),
-                                ),
+                                if (widget.customIcon != null)
+                                  SizedBox(
+                                    width: 19,
+                                    height: 19,
+                                    child: widget.customIcon!,
+                                  )
+                                else if (widget.icon != null)
+                                  Icon(
+                                    widget.icon!,
+                                    size: 19,
+                                    color: const Color(0xFF8896B8),
+                                  ),
                                 const SizedBox(height: 2),
                                 Text(
                                   widget.label,
@@ -421,18 +451,27 @@ class _TactileNavTabState extends State<_TactileNavTab> with TickerProviderState
                               ),
 
                               // 3D Embossed Icon
-                              Icon(
-                                widget.icon,
-                                size: 20,
-                                color: Colors.white,
-                                shadows: const [
-                                  Shadow(
-                                    color: Color(0xFF004968),
-                                    offset: Offset(0, 1.5),
-                                    blurRadius: 2,
+                              if (widget.customIcon != null)
+                                ClipOval(
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: widget.customIcon!,
                                   ),
-                                ],
-                              ),
+                                )
+                              else if (widget.icon != null)
+                                Icon(
+                                  widget.icon!,
+                                  size: 20,
+                                  color: Colors.white,
+                                  shadows: const [
+                                    Shadow(
+                                      color: Color(0xFF004968),
+                                      offset: Offset(0, 1.5),
+                                      blurRadius: 2,
+                                    ),
+                                  ],
+                                ),
                             ],
                           ),
                         ),

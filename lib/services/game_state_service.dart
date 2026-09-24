@@ -17,6 +17,43 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       lastPlayed = DateTime.tryParse(lastPlayedStr);
     }
 
+    final lastDailyRewardStr = prefs.getString('lastDailyRewardDate');
+    DateTime? lastDailyRewardDate;
+    if (lastDailyRewardStr != null) {
+      lastDailyRewardDate = DateTime.tryParse(lastDailyRewardStr);
+    }
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Check if new day for today's quest metrics
+    bool isNewDay = true;
+    if (lastPlayed != null) {
+      final lastDay = DateTime(lastPlayed.year, lastPlayed.month, lastPlayed.day);
+      if (today.isAtSameMomentAs(lastDay)) {
+        isNewDay = false;
+      }
+    }
+
+    // Check 7-day streak broken condition
+    int dailyRewardDay = prefs.getInt('dailyRewardDay') ?? 1;
+    if (lastDailyRewardDate != null) {
+      final lastRewardDay = DateTime(
+        lastDailyRewardDate.year,
+        lastDailyRewardDate.month,
+        lastDailyRewardDate.day,
+      );
+      final daysDiff = today.difference(lastRewardDay).inDays;
+      if (daysDiff > 1) {
+        // Missed a day -> reset to Day 1
+        dailyRewardDay = 1;
+      }
+    }
+
+    final todayShiftsPlayed = isNewDay ? 0 : (prefs.getInt('todayShiftsPlayed') ?? 0);
+    final todayBestCombo = isNewDay ? 0 : (prefs.getInt('todayBestCombo') ?? 0);
+    final dailyQuestsClaimed = isNewDay ? <String>[] : (prefs.getStringList('dailyQuestsClaimed') ?? <String>[]);
+
     state = PlayerState(
       displayName: prefs.getString('displayName') ?? 'Observer',
       level: prefs.getInt('level') ?? 1,
@@ -47,6 +84,12 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       audioBalance: prefs.getDouble('audioBalance') ?? 0.0,
       bassWarmth: prefs.getDouble('bassWarmth') ?? 0.5,
       sparkleSoftness: prefs.getDouble('sparkleSoftness') ?? 0.6,
+      lastDailyRewardDate: lastDailyRewardDate,
+      dailyRewardDay: dailyRewardDay,
+      dailyQuestsClaimed: dailyQuestsClaimed,
+      todayShiftsPlayed: todayShiftsPlayed,
+      todayBestCombo: todayBestCombo,
+      isCalmMode: prefs.getBool('isCalmMode') ?? false,
     );
 
     AudioService().setSoundEnabled(state.soundEnabled);
@@ -92,6 +135,14 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     await prefs.setDouble('audioBalance', state.audioBalance);
     await prefs.setDouble('bassWarmth', state.bassWarmth);
     await prefs.setDouble('sparkleSoftness', state.sparkleSoftness);
+    if (state.lastDailyRewardDate != null) {
+      await prefs.setString('lastDailyRewardDate', state.lastDailyRewardDate!.toIso8601String());
+    }
+    await prefs.setInt('dailyRewardDay', state.dailyRewardDay);
+    await prefs.setStringList('dailyQuestsClaimed', state.dailyQuestsClaimed);
+    await prefs.setInt('todayShiftsPlayed', state.todayShiftsPlayed);
+    await prefs.setInt('todayBestCombo', state.todayBestCombo);
+    await prefs.setBool('isCalmMode', state.isCalmMode);
   }
 
   void completeOnboarding(String name) {
@@ -157,6 +208,9 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
         ? reactionTimeMs
         : state.bestReactionTimeMs;
 
+    final newTodayShifts = state.todayShiftsPlayed + 1;
+    final newTodayBestCombo = currentCombo > state.todayBestCombo ? currentCombo : state.todayBestCombo;
+
     state = state.copyWith(
       level: newLevel,
       xp: newXp,
@@ -168,6 +222,8 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       bestReactionTimeMs: newBestReaction,
       lastPlayedDate: DateTime.now(),
       worldLevel: newWorldLevel,
+      todayShiftsPlayed: newTodayShifts,
+      todayBestCombo: newTodayBestCombo,
     );
     _saveState();
 
@@ -281,6 +337,93 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       bassWarmth: bassWarmth ?? state.bassWarmth,
       sparkleSoftness: sparkleSoftness ?? state.sparkleSoftness,
     );
+    _saveState();
+  }
+
+  /// Claim the 7-day cosmic streak reward
+  Map<String, int> claimDailyReward() {
+    final day = state.dailyRewardDay;
+    // Rewards per day:
+    // Day 1: 50 gems, 25 XP
+    // Day 2: 75 gems, 40 XP
+    // Day 3: 100 gems, 60 XP
+    // Day 4: 150 gems, 80 XP
+    // Day 5: 200 gems, 100 XP
+    // Day 6: 250 gems, 120 XP
+    // Day 7: 500 gems, 250 XP (Grand Cosmic Starlight Chest!)
+    const rewardsTable = [
+      {'gems': 50, 'xp': 25},
+      {'gems': 75, 'xp': 40},
+      {'gems': 100, 'xp': 60},
+      {'gems': 150, 'xp': 80},
+      {'gems': 200, 'xp': 100},
+      {'gems': 250, 'xp': 120},
+      {'gems': 500, 'xp': 250},
+    ];
+
+    final reward = rewardsTable[(day - 1).clamp(0, 6)];
+    final gemsGained = reward['gems']!;
+    final xpGained = reward['xp']!;
+
+    int newXp = state.xp + xpGained;
+    int newLevel = state.level;
+    int newXpToNext = state.xpToNextLevel;
+    int newWorldLevel = state.worldLevel;
+
+    while (newXp >= newXpToNext) {
+      newXp -= newXpToNext;
+      newLevel++;
+      newXpToNext = PlayerState.xpForLevel(newLevel);
+      if (newLevel % 5 == 0) newWorldLevel++;
+    }
+
+    final nextDay = day >= 7 ? 1 : day + 1;
+
+    state = state.copyWith(
+      gems: state.gems + gemsGained,
+      xp: newXp,
+      level: newLevel,
+      xpToNextLevel: newXpToNext,
+      worldLevel: newWorldLevel,
+      lastDailyRewardDate: DateTime.now(),
+      dailyRewardDay: nextDay,
+    );
+    _saveState();
+
+    return {'gems': gemsGained, 'xp': xpGained, 'dayClaimed': day};
+  }
+
+  /// Claim a daily quest reward
+  void claimDailyQuest(String questId, int gems, int xp) {
+    if (state.dailyQuestsClaimed.contains(questId)) return;
+
+    final updatedClaimed = List<String>.from(state.dailyQuestsClaimed)..add(questId);
+
+    int newXp = state.xp + xp;
+    int newLevel = state.level;
+    int newXpToNext = state.xpToNextLevel;
+    int newWorldLevel = state.worldLevel;
+
+    while (newXp >= newXpToNext) {
+      newXp -= newXpToNext;
+      newLevel++;
+      newXpToNext = PlayerState.xpForLevel(newLevel);
+      if (newLevel % 5 == 0) newWorldLevel++;
+    }
+
+    state = state.copyWith(
+      gems: state.gems + gems,
+      xp: newXp,
+      level: newLevel,
+      xpToNextLevel: newXpToNext,
+      worldLevel: newWorldLevel,
+      dailyQuestsClaimed: updatedClaimed,
+    );
+    _saveState();
+  }
+
+  void setCalmMode(bool enabled) {
+    state = state.copyWith(isCalmMode: enabled);
     _saveState();
   }
 }

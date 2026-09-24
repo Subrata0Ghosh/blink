@@ -334,24 +334,30 @@ class _TactileNovaCompanionState extends State<TactileNovaCompanion>
           final scaleY = 1.0 + (breathe * 0.025);
           final scaleX = 1.0 - (breathe * 0.015);
 
+          final isHappy = _currentBehavior == NovaBehavior.spinning ||
+              _currentBehavior == NovaBehavior.hopping ||
+              _currentBehavior == NovaBehavior.talking ||
+              _currentBehavior == NovaBehavior.waving;
+
           // Alternating Leg paddling angles (zero-gravity kick)
           final legProgress = _legController.value * 2 * pi;
           final isHopping = _hopController.isAnimating && _hopAnim.value < -8;
-          final leftLegAngle = isHopping ? -0.22 : (sin(legProgress) * 0.12);
-          final rightLegAngle = isHopping ? 0.22 : (sin(legProgress + pi) * 0.12);
-          final legTuckY = isHopping ? -10.0 : 0.0;
+          final isWaving = _waveController.isAnimating || _currentBehavior == NovaBehavior.waving;
+
+          final leftLegAngle = isHopping ? -0.20 : (sin(legProgress) * 0.12);
+          final rightLegAngle = isHopping ? 0.20 : (sin(legProgress + pi) * 0.12);
+          final legTuckY = isHopping ? -9.0 : 0.0;
 
           // Arm floating and waving angles
-          final isWaving = _waveController.isAnimating;
           final waveProgress = _waveController.value * 5 * pi;
           final rightArmAngle = isWaving
-              ? (-0.45 + (sin(waveProgress) * 0.28))
-              : (-sin(_idleController.value * 2 * pi) * 0.08);
-          final leftArmAngle = sin(_idleController.value * 2 * pi) * 0.10;
-
-          final isHappy = _currentBehavior == NovaBehavior.spinning ||
-              _currentBehavior == NovaBehavior.hopping ||
-              _currentBehavior == NovaBehavior.talking;
+              ? (-0.46 + (sin(waveProgress) * 0.24))
+              : isHappy
+                  ? 0.22
+                  : (-sin(_idleController.value * 2 * pi) * 0.08);
+          final leftArmAngle = isHappy
+              ? -0.22
+              : (sin(_idleController.value * 2 * pi) * 0.08);
 
           // Character frame dimensions
           final bodySize = size * 1.16;
@@ -413,104 +419,93 @@ class _TactileNovaCompanionState extends State<TactileNovaCompanion>
                           ),
 
                           // ──── ARTICULATED LIVING BODY LAYERS ────
-                          if (!isHappy) ...[
-                            // A. LEGS LAYER (Pivoting at hips with zero-gravity kicks)
-                            Transform.translate(
-                              offset: Offset(0, legTuckY),
-                              child: Stack(
-                                children: [
-                                  // Left Leg (hip socket at ~410, 710 in 1024x1024)
-                                  Transform.rotate(
-                                    angle: leftLegAngle,
-                                    alignment: const Alignment(-0.20, 0.39),
-                                    child: Image.asset(
-                                      AppAssets.novaLegLeft,
-                                      width: bodySize,
-                                      height: bodySize,
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.high,
-                                    ),
+                          // A. LEGS LAYER (Back layer, underneath pelvic rim)
+                          Transform.translate(
+                            offset: Offset(0, legTuckY),
+                            child: Stack(
+                              children: [
+                                // Left Leg (viewer's left, hip pivot)
+                                Transform.rotate(
+                                  angle: leftLegAngle,
+                                  alignment: const Alignment(-0.111, 0.514),
+                                  child: Image.asset(
+                                    AppAssets.novaLegLeft,
+                                    width: bodySize,
+                                    height: bodySize,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
                                   ),
-                                  // Right Leg (hip socket at ~590, 710 in 1024x1024)
-                                  Transform.rotate(
-                                    angle: rightLegAngle,
-                                    alignment: const Alignment(0.15, 0.39),
-                                    child: Image.asset(
-                                      AppAssets.novaLegRight,
-                                      width: bodySize,
-                                      height: bodySize,
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.high,
-                                    ),
+                                ),
+                                // Right Leg (viewer's right, hip pivot)
+                                Transform.rotate(
+                                  angle: rightLegAngle,
+                                  alignment: const Alignment(0.113, 0.514),
+                                  child: Image.asset(
+                                    AppAssets.novaLegRight,
+                                    width: bodySize,
+                                    height: bodySize,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.high,
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
+                          ),
 
-                            // Micro-thruster ion rings under feet
-                            Positioned(
-                              bottom: bodySize * 0.12,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  _buildIonThruster(intensity: 0.6 + (sin(legProgress) * 0.3)),
-                                  SizedBox(width: bodySize * 0.16),
-                                  _buildIonThruster(intensity: 0.6 + (sin(legProgress + pi) * 0.3)),
-                                ],
-                              ),
-                            ),
-
-                            // B. TORSO & HEAD LAYER (Breathing expansion and head posture)
-                            Transform.scale(
-                              scaleY: scaleY,
-                              scaleX: scaleX,
-                              alignment: Alignment.bottomCenter,
-                              child: Image.asset(
-                                AppAssets.novaTorso,
-                                width: bodySize,
-                                height: bodySize,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
-                              ),
-                            ),
-
-                            // C. ARMS LAYER (Pivoting at shoulders with buoyant floats and waves)
-                            // Left Arm (shoulder socket at ~360, 530 in 1024x1024)
-                            Transform.rotate(
-                              angle: leftArmAngle,
-                              alignment: const Alignment(-0.30, 0.035),
-                              child: Image.asset(
-                                AppAssets.novaArmLeft,
-                                width: bodySize,
-                                height: bodySize,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
-                              ),
-                            ),
-                            // Right Arm (shoulder socket at ~640, 530 in 1024x1024)
-                            Transform.rotate(
-                              angle: rightArmAngle,
-                              alignment: const Alignment(0.25, 0.035),
-                              child: Image.asset(
-                                AppAssets.novaArmRight,
-                                width: bodySize,
-                                height: bodySize,
-                                fit: BoxFit.contain,
-                                filterQuality: FilterQuality.high,
-                              ),
-                            ),
-                          ] else ...[
-                            // Full celebratory sprite when cheering/spinning/hopping
-                            Image.asset(
-                              AppAssets.novaHappy,
+                          // B. TORSO & HEAD LAYER (Middle layer with living breathing scale)
+                          Transform.scale(
+                            scaleY: scaleY,
+                            scaleX: scaleX,
+                            alignment: Alignment.bottomCenter,
+                            child: Image.asset(
+                              AppAssets.novaTorso,
                               width: bodySize,
                               height: bodySize,
                               fit: BoxFit.contain,
                               filterQuality: FilterQuality.high,
                             ),
-                          ],
+                          ),
 
-                          // ──── D. LIVING FACE OVERLAY (Blinking, gazing, blushing) ────
+                          // C. ARMS LAYER (Front layer, smoothly socketed at shoulders)
+                          // Left Arm (viewer's left, shoulder pivot)
+                          Transform.rotate(
+                            angle: leftArmAngle,
+                            alignment: const Alignment(-0.297, 0.162),
+                            child: Image.asset(
+                              AppAssets.novaArmLeft,
+                              width: bodySize,
+                              height: bodySize,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
+                            ),
+                          ),
+                          // Right Arm (viewer's right, shoulder pivot / wave)
+                          Transform.rotate(
+                            angle: rightArmAngle,
+                            alignment: const Alignment(0.260, 0.162),
+                            child: Image.asset(
+                              AppAssets.novaArmRight,
+                              width: bodySize,
+                              height: bodySize,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
+                            ),
+                          ),
+
+                          // Micro-thruster ion rings under feet (active during hover/hop)
+                          Positioned(
+                            bottom: (bodySize * 0.13) - legTuckY,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildIonThruster(intensity: 0.65 + (sin(legProgress) * 0.25)),
+                                SizedBox(width: bodySize * 0.16),
+                                _buildIonThruster(intensity: 0.65 + (sin(legProgress + pi) * 0.25)),
+                              ],
+                            ),
+                          ),
+
+                          // ──── LIVING FACE OVERLAY (Blinking, gazing, blushing) ────
                           CustomPaint(
                             painter: _NovaFacePainter(
                               blinkProgress: _blinkController.value,
@@ -522,13 +517,14 @@ class _TactileNovaCompanionState extends State<TactileNovaCompanion>
                             size: Size(bodySize, bodySize),
                           ),
 
-                          // ──── E. CHEST ARC REACTOR PULSING CORE ────
+                          // ──── CHEST ARC REACTOR PULSING CORE ────
+                          // Aligned exactly with Nova's chest core (at x=0.555, y=0.588)
                           Positioned(
-                            top: bodySize * 0.605,
-                            left: bodySize * 0.468,
+                            top: bodySize * 0.585,
+                            left: bodySize * 0.535,
                             child: Container(
-                              width: bodySize * 0.065,
-                              height: bodySize * 0.065,
+                              width: bodySize * 0.055,
+                              height: bodySize * 0.055,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: const Color(0xFFE8FDFF),
@@ -674,32 +670,33 @@ class _NovaFacePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Relative landmarks based on 1024x1024 source:
-    // Left eye center: (0.391, 0.362)
-    // Right eye center: (0.589, 0.357)
-    final leftEye = Offset(size.width * 0.391, size.height * 0.362);
-    final rightEye = Offset(size.width * 0.589, size.height * 0.357);
-    final eyeRadius = size.width * 0.068;
+    // ──── TRUE CALIBRATED LANDMARKS (matching 1024x1024 Nova artwork) ────
+    final leftEye = Offset(size.width * 0.490, size.height * 0.366);
+    final rightEye = Offset(size.width * 0.662, size.height * 0.360);
+    final leftEyeW = size.width * 0.155;
+    final leftEyeH = size.height * 0.150;
+    final rightEyeW = size.width * 0.135;
+    final rightEyeH = size.height * 0.145;
 
-    // 1. CHEEK BLUSH
-    final blushAlpha = isHappy ? 0.45 : (0.15 + (breathe * 0.08).clamp(0.0, 0.25));
+    // 1. CHEEK BLUSH (Positioned right beneath the real eyes)
+    final blushAlpha = isHappy ? 0.48 : (0.16 + (breathe * 0.08).clamp(0.0, 0.26));
     final blushPaint = Paint()
       ..color = const Color(0xFFFF62A5).withValues(alpha: blushAlpha)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
-    final leftCheek = Offset(size.width * 0.315, size.height * 0.428);
-    final rightCheek = Offset(size.width * 0.665, size.height * 0.422);
+    final leftCheek = Offset(size.width * 0.420, size.height * 0.445);
+    final rightCheek = Offset(size.width * 0.720, size.height * 0.440);
     canvas.drawOval(
-      Rect.fromCenter(center: leftCheek, width: size.width * 0.07, height: size.width * 0.035),
+      Rect.fromCenter(center: leftCheek, width: size.width * 0.08, height: size.width * 0.04),
       blushPaint,
     );
     canvas.drawOval(
-      Rect.fromCenter(center: rightCheek, width: size.width * 0.07, height: size.width * 0.035),
+      Rect.fromCenter(center: rightCheek, width: size.width * 0.08, height: size.width * 0.04),
       blushPaint,
     );
 
     // 2. FOREHEAD VISOR COGNITIVE PULSE
-    final visorCenter = Offset(size.width * 0.485, size.height * 0.225);
+    final visorCenter = Offset(size.width * 0.540, size.height * 0.230);
     final visorGlow = Paint()
       ..color = AppColors.cyan.withValues(alpha: 0.30 + (breathe * 0.15).clamp(0.0, 0.30))
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
@@ -714,17 +711,17 @@ class _NovaFacePainter extends CustomPainter {
         ..strokeCap = StrokeCap.round
         ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 1);
 
-      // Left happy arc
-      final leftRect = Rect.fromCenter(center: leftEye, width: eyeRadius * 1.5, height: eyeRadius * 1.2);
+      // Left happy arc over left eye
+      final leftRect = Rect.fromCenter(center: leftEye, width: leftEyeW * 0.9, height: leftEyeH * 0.85);
       canvas.drawArc(leftRect, pi * 1.15, pi * 0.70, false, arcPaint);
 
-      // Right happy arc
-      final rightRect = Rect.fromCenter(center: rightEye, width: eyeRadius * 1.5, height: eyeRadius * 1.2);
+      // Right happy arc over right eye
+      final rightRect = Rect.fromCenter(center: rightEye, width: rightEyeW * 0.9, height: rightEyeH * 0.85);
       canvas.drawArc(rightRect, pi * 1.15, pi * 0.70, false, arcPaint);
       return;
     }
 
-    // 4. NATURAL EYE BLINKING EYELIDS
+    // 4. NATURAL EYE BLINKING EYELIDS (Aligned exactly over real eyes)
     if (blinkProgress > 0.05) {
       final shutterFraction = blinkProgress.clamp(0.0, 1.0);
       final eyelidPaint = Paint()
@@ -734,20 +731,21 @@ class _NovaFacePainter extends CustomPainter {
       final eyelidSeamPaint = Paint()
         ..color = AppColors.cyanLight
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0
-        ..strokeCap = StrokeCap.round;
+        ..strokeWidth = 2.2
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.solid, 1);
 
       // Draw shutter over left eye
       final leftEyelidRect = Rect.fromCenter(
         center: leftEye,
-        width: eyeRadius * 2.2,
-        height: eyeRadius * 2.2 * shutterFraction,
+        width: leftEyeW,
+        height: leftEyeH * shutterFraction,
       );
       canvas.drawOval(leftEyelidRect, eyelidPaint);
-      if (shutterFraction > 0.6) {
+      if (shutterFraction > 0.55) {
         canvas.drawLine(
-          Offset(leftEye.dx - eyeRadius * 0.8, leftEye.dy),
-          Offset(leftEye.dx + eyeRadius * 0.8, leftEye.dy),
+          Offset(leftEye.dx - leftEyeW * 0.42, leftEye.dy + (leftEyeH * shutterFraction * 0.40)),
+          Offset(leftEye.dx + leftEyeW * 0.42, leftEye.dy + (leftEyeH * shutterFraction * 0.40)),
           eyelidSeamPaint,
         );
       }
@@ -755,14 +753,14 @@ class _NovaFacePainter extends CustomPainter {
       // Draw shutter over right eye
       final rightEyelidRect = Rect.fromCenter(
         center: rightEye,
-        width: eyeRadius * 2.2,
-        height: eyeRadius * 2.2 * shutterFraction,
+        width: rightEyeW,
+        height: rightEyeH * shutterFraction,
       );
       canvas.drawOval(rightEyelidRect, eyelidPaint);
-      if (shutterFraction > 0.6) {
+      if (shutterFraction > 0.55) {
         canvas.drawLine(
-          Offset(rightEye.dx - eyeRadius * 0.8, rightEye.dy),
-          Offset(rightEye.dx + eyeRadius * 0.8, rightEye.dy),
+          Offset(rightEye.dx - rightEyeW * 0.42, rightEye.dy + (rightEyeH * shutterFraction * 0.40)),
+          Offset(rightEye.dx + rightEyeW * 0.42, rightEye.dy + (rightEyeH * shutterFraction * 0.40)),
           eyelidSeamPaint,
         );
       }
@@ -771,8 +769,8 @@ class _NovaFacePainter extends CustomPainter {
       final glanceOffset = Offset(glanceX * 3.5, glanceY * 2.5);
       final sparklePaint = Paint()..color = Colors.white.withValues(alpha: 0.85);
 
-      canvas.drawCircle(leftEye + glanceOffset + const Offset(2, -2), 2.2, sparklePaint);
-      canvas.drawCircle(rightEye + glanceOffset + const Offset(2, -2), 2.2, sparklePaint);
+      canvas.drawCircle(leftEye + glanceOffset + const Offset(1, -2), 2.2, sparklePaint);
+      canvas.drawCircle(rightEye + glanceOffset + const Offset(1, -2), 2.2, sparklePaint);
     }
   }
 

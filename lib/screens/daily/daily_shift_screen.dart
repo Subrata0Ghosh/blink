@@ -39,10 +39,12 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
   double _timeLeft = 4.0;
   int? _selectedAnswer;
   bool _showVictory = false;
+  bool _showDefeat = false;
 
   Timer? _portalTimer;
   Timer? _observationTimer;
   Timer? _victoryTimer;
+  Timer? _defeatTimer;
 
   @override
   void initState() {
@@ -60,6 +62,16 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
     );
 
     _challenge = _engine.generateChallenge(mode: ChallengeMode.change, difficulty: 25);
+
+    // Initial observation duration with Zen calm mode bonus
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final isCalm = ref.read(gameStateProvider).isCalmMode;
+        if (isCalm) {
+          setState(() => _timeLeft = 7.0);
+        }
+      }
+    });
 
     _startPortal();
   }
@@ -121,7 +133,27 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
     } else {
       AudioService().playWrong();
       triggerHaptic(ref, HapticService.wrongAnswer);
+      _defeatTimer = Timer(const Duration(milliseconds: 1000), () {
+        if (mounted) {
+          setState(() => _showDefeat = true);
+        }
+      });
     }
+  }
+
+  void _restartChallenge() {
+    _defeatTimer?.cancel();
+    _observationTimer?.cancel();
+    final isCalm = ref.read(gameStateProvider).isCalmMode;
+    final observeSecs = isCalm ? 7.0 : 4.0;
+    setState(() {
+      _challenge = _engine.generateChallenge(mode: ChallengeMode.change, difficulty: 25);
+      _isObserving = true;
+      _timeLeft = observeSecs;
+      _selectedAnswer = null;
+      _showDefeat = false;
+    });
+    _runObservationTimer();
   }
 
   void _handleClose() {
@@ -139,6 +171,7 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
     _portalTimer?.cancel();
     _observationTimer?.cancel();
     _victoryTimer?.cancel();
+    _defeatTimer?.cancel();
     _portalController.dispose();
     super.dispose();
   }
@@ -360,6 +393,87 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
                         height: 54,
                         fontSize: 16,
                         onTap: _handleClose,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Defeat / Retry Modal
+          if (_showDefeat)
+            Container(
+              color: Colors.black.withValues(alpha: 0.85),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.error.withValues(alpha: 0.15),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.6), width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.error.withValues(alpha: 0.4),
+                              blurRadius: 24,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.refresh_rounded,
+                          color: AppColors.error,
+                          size: 48,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'REALITY SLIPPED',
+                        style: GoogleFonts.outfit(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'The cosmic alignment escaped focus.\nTake a breath and try again!',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      TactileButton.cosmic(
+                        label: 'TRY AGAIN',
+                        width: 220,
+                        height: 54,
+                        fontSize: 16,
+                        onTap: _restartChallenge,
+                      ),
+                      const SizedBox(height: 14),
+                      GestureDetector(
+                        onTap: _handleClose,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Text(
+                            'RETURN TO MAP',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textMuted,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),

@@ -34,9 +34,11 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
   double _timeLeft = 5.0;
   int? _selectedAnswer;
   bool _showVictory = false;
+  bool _showDefeat = false;
 
   Timer? _observationTimer;
   Timer? _victoryTimer;
+  Timer? _defeatTimer;
 
   @override
   void initState() {
@@ -50,6 +52,16 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
       mode: ChallengeMode.hiddenRule,
       difficulty: 30,
     );
+
+    // Initial observation duration with Zen calm mode bonus
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final isCalm = ref.read(gameStateProvider).isCalmMode;
+        if (isCalm) {
+          setState(() => _timeLeft = 8.0);
+        }
+      }
+    });
 
     _runObservationTimer();
   }
@@ -98,7 +110,30 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
     } else {
       AudioService().playWrong();
       triggerHaptic(ref, HapticService.wrongAnswer);
+      _defeatTimer = Timer(const Duration(milliseconds: 1000), () {
+        if (mounted) {
+          setState(() => _showDefeat = true);
+        }
+      });
     }
+  }
+
+  void _restartChallenge() {
+    _defeatTimer?.cancel();
+    _observationTimer?.cancel();
+    final isCalm = ref.read(gameStateProvider).isCalmMode;
+    final observeSecs = isCalm ? 8.0 : 5.0;
+    setState(() {
+      _challenge = _engine.generateChallenge(
+        mode: ChallengeMode.hiddenRule,
+        difficulty: 30,
+      );
+      _isObserving = true;
+      _timeLeft = observeSecs;
+      _selectedAnswer = null;
+      _showDefeat = false;
+    });
+    _runObservationTimer();
   }
 
   void _handleClose() {
@@ -115,6 +150,7 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
   void dispose() {
     _observationTimer?.cancel();
     _victoryTimer?.cancel();
+    _defeatTimer?.cancel();
     _fogController.dispose();
     super.dispose();
   }
@@ -353,6 +389,87 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                         height: 54,
                         fontSize: 16,
                         onTap: _handleClose,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+          // Defeat / Retry Modal
+          if (_showDefeat)
+            Container(
+              color: Colors.black.withValues(alpha: 0.88),
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 90,
+                        height: 90,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.error.withValues(alpha: 0.15),
+                          border: Border.all(color: AppColors.error.withValues(alpha: 0.6), width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.error.withValues(alpha: 0.4),
+                              blurRadius: 24,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.refresh_rounded,
+                          color: AppColors.error,
+                          size: 48,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'MYSTERY VEILED',
+                        style: GoogleFonts.outfit(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'The hidden rule concealed itself again.\nFocus your perception and retry!',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      TactileButton.nebula(
+                        label: 'TRY AGAIN',
+                        width: 220,
+                        height: 54,
+                        fontSize: 16,
+                        onTap: _restartChallenge,
+                      ),
+                      const SizedBox(height: 14),
+                      GestureDetector(
+                        onTap: _handleClose,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Text(
+                            'RETURN TO MAP',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textMuted,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ),
                       ),
                     ],
                   ),

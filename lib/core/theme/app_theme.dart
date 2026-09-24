@@ -49,6 +49,18 @@ class AppTheme {
           side: const BorderSide(color: AppColors.glassBorder, width: 1),
         ),
       ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: const Color(0xFF1B233A),
+        contentTextStyle: GoogleFonts.outfit(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
     );
   }
 
