@@ -1,4 +1,4 @@
-package com.blink.game.blink
+package com.technorchid.game.blink
 
 import io.flutter.embedding.android.FlutterActivity
 

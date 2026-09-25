@@ -1,0 +1,7 @@
+# Example key.properties for Google Play release keystore
+# Replace these values with your actual keystore details
+# Keep this file and your actual key.properties out of public repositories
+storePassword=your_keystore_password
+keyPassword=your_key_password
+keyAlias=upload
+storeFile=upload-keystore.jks
