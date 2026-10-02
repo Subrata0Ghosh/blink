@@ -100,8 +100,7 @@ class NotificationService {
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl != null) {
         final notifGranted = await androidImpl.requestNotificationsPermission() ?? false;
-        final exactGranted = await androidImpl.requestExactAlarmsPermission() ?? false;
-        debugPrint('Notification permissions - notifications: $notifGranted, exact alarms: $exactGranted');
+        debugPrint('Notification permissions - notifications: $notifGranted');
         return notifGranted;
       }
       return true;
@@ -169,16 +168,8 @@ class NotificationService {
       // Cancel previous scheduled reminders before rescheduling new ones
       await cancelAllReminders();
 
-      final androidImpl = _notificationsPlugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      bool canExact = false;
-      try {
-        canExact = await androidImpl?.canScheduleExactNotifications() ?? false;
-      } catch (_) {}
-
-      final scheduleMode = canExact
-          ? AndroidScheduleMode.exactAllowWhileIdle
-          : AndroidScheduleMode.inexactAllowWhileIdle;
+      // Standard power-efficient inexact scheduling compliant with Google Play policy
+      const scheduleMode = AndroidScheduleMode.inexactAllowWhileIdle;
 
       final offsets = [
         const Duration(minutes: 10),
@@ -217,7 +208,7 @@ class NotificationService {
           androidScheduleMode: scheduleMode,
         );
       }
-      debugPrint('Scheduled ${offsets.length} cosmic inactivity reminders (exact: $canExact).');
+      debugPrint('Scheduled ${offsets.length} cosmic inactivity reminders.');
     } catch (e) {
       debugPrint('Error scheduling inactivity reminders: $e');
     }
@@ -244,22 +235,13 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
       );
 
-      final androidImpl = _notificationsPlugin.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      bool canExact = false;
-      try {
-        canExact = await androidImpl?.canScheduleExactNotifications() ?? false;
-      } catch (_) {}
-
       await _notificationsPlugin.zonedSchedule(
         id: 999,
         title: 'The Cosmos misses your keen eye! ✨',
         body: 'Reality changed while you were away. Come blink and discover what shifted.',
         scheduledDate: scheduledTime,
         notificationDetails: notifDetails,
-        androidScheduleMode: canExact
-            ? AndroidScheduleMode.exactAllowWhileIdle
-            : AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
       debugPrint('Test reminder scheduled for ${delay.inSeconds} seconds from now.');
     } catch (e) {
