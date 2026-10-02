@@ -8,8 +8,12 @@ import 'package:blink/screens/collect/collect_screen.dart';
 import 'package:blink/screens/profile/profile_screen.dart';
 import 'package:blink/screens/daily/daily_shift_screen.dart';
 import 'package:blink/screens/mystery/mystery_screen.dart';
+import 'package:blink/screens/result/result_screen.dart';
+import 'package:blink/screens/onboarding/onboarding_screen.dart';
 import 'package:blink/widgets/navigation/game_bottom_nav.dart';
 import 'package:blink/widgets/sliders/tactile_jelly_switch.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:blink/services/game_state_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -132,6 +136,83 @@ void main() {
       expect(find.byType(MysteryScreen), findsOneWidget);
       expect(find.textContaining('MYSTERY SHIFT'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 200));
+    });
+
+    testWidgets('ResultScreen renders buttons and stats without overflow on compact screen', (tester) async {
+      tester.view.physicalSize = const Size(720, 1280);
+      tester.view.devicePixelRatio = 2.0; // logical 360x640
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: const MaterialApp(
+            home: ResultScreen(
+              results: {
+                'score': 230,
+                'xp': 40,
+                'gems': 20,
+                'correct': 2,
+                'total': 5,
+                'combo': 1,
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.byType(ResultScreen), findsOneWidget);
+      expect(find.text('KEEP GOING'), findsOneWidget);
+      expect(find.text('NEXT CHALLENGE'), findsOneWidget);
+      expect(find.text('RETURN HOME'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('OnboardingScreen page 3 name input is visible with keyboard open', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(360, 640),
+                viewInsets: EdgeInsets.only(bottom: 280),
+              ),
+              child: OnboardingScreen(onComplete: () {}),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(OnboardingScreen), findsOneWidget);
+
+      // Tap skip to go directly to name page (page 3)
+      final skipBtn = find.text('SKIP');
+      expect(skipBtn, findsOneWidget);
+      await tester.tap(skipBtn);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.text('What\'s your name?'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('START JOURNEY'), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 }

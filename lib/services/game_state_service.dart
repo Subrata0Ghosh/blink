@@ -1,16 +1,45 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player_state.dart';
 import 'audio_service.dart';
 
+/// Provider for SharedPreferences instance. Overridden in main.dart.
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError('sharedPreferencesProvider must be overridden in ProviderScope');
+});
+
 /// Manages all persistent game state — XP, gems, streaks, progression
 class GameStateNotifier extends StateNotifier<PlayerState> {
-  GameStateNotifier() : super(const PlayerState()) {
-    _loadState();
+  final SharedPreferences? _prefs;
+  bool _isSaving = false;
+  bool _hasPendingSave = false;
+
+  GameStateNotifier([this._prefs]) : super(_loadInitialState(_prefs)) {
+    if (_prefs == null) {
+      _loadStateAsyncFallback();
+    } else {
+      _syncAudioWithState();
+    }
   }
 
-  Future<void> _loadState() async {
-    final prefs = await SharedPreferences.getInstance();
+  static double? _getDoubleSafe(SharedPreferences prefs, String key) {
+    try {
+      final val = prefs.get(key);
+      if (val is double) return val;
+      if (val is int) return val.toDouble();
+      if (val is num) return val.toDouble();
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static PlayerState _loadInitialState(SharedPreferences? prefs) {
+    if (prefs == null) {
+      return const PlayerState();
+    }
+
     final lastPlayedStr = prefs.getString('lastPlayedDate');
     DateTime? lastPlayed;
     if (lastPlayedStr != null) {
@@ -54,7 +83,7 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     final todayBestCombo = isNewDay ? 0 : (prefs.getInt('todayBestCombo') ?? 0);
     final dailyQuestsClaimed = isNewDay ? <String>[] : (prefs.getStringList('dailyQuestsClaimed') ?? <String>[]);
 
-    state = PlayerState(
+    return PlayerState(
       displayName: prefs.getString('displayName') ?? 'Observer',
       level: prefs.getInt('level') ?? 1,
       xp: prefs.getInt('xp') ?? 0,
@@ -63,6 +92,7 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       totalChallenges: prefs.getInt('totalChallenges') ?? 0,
       correctAnswers: prefs.getInt('correctAnswers') ?? 0,
       bestCombo: prefs.getInt('bestCombo') ?? 0,
+      bestScore: prefs.getInt('bestScore') ?? 0,
       currentStreak: prefs.getInt('currentStreak') ?? 0,
       bestStreak: prefs.getInt('bestStreak') ?? 0,
       bestReactionTimeMs: prefs.getInt('bestReactionTimeMs') ?? 0,
@@ -72,8 +102,8 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       musicEnabled: prefs.getBool('musicEnabled') ?? true,
       sfxEnabled: prefs.getBool('sfxEnabled') ?? true,
       hapticEnabled: prefs.getBool('hapticEnabled') ?? true,
-      musicVolume: prefs.getDouble('musicVolume') ?? 0.5,
-      sfxVolume: prefs.getDouble('sfxVolume') ?? 0.8,
+      musicVolume: _getDoubleSafe(prefs, 'musicVolume') ?? 0.5,
+      sfxVolume: _getDoubleSafe(prefs, 'sfxVolume') ?? 0.8,
       worldLevel: prefs.getInt('worldLevel') ?? 1,
       observerId: prefs.getString('observerId') ?? '16710538479',
       selectedAvatarId: prefs.getString('selectedAvatarId') ?? 'nova_happy',
@@ -81,9 +111,9 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       country: prefs.getString('country') ?? 'Cosmos',
       voiceEnabled: prefs.getBool('voiceEnabled') ?? true,
       monoAudio: prefs.getBool('monoAudio') ?? false,
-      audioBalance: prefs.getDouble('audioBalance') ?? 0.0,
-      bassWarmth: prefs.getDouble('bassWarmth') ?? 0.5,
-      sparkleSoftness: prefs.getDouble('sparkleSoftness') ?? 0.6,
+      audioBalance: _getDoubleSafe(prefs, 'audioBalance') ?? 0.0,
+      bassWarmth: _getDoubleSafe(prefs, 'bassWarmth') ?? 0.5,
+      sparkleSoftness: _getDoubleSafe(prefs, 'sparkleSoftness') ?? 0.6,
       lastDailyRewardDate: lastDailyRewardDate,
       dailyRewardDay: dailyRewardDay,
       dailyQuestsClaimed: dailyQuestsClaimed,
@@ -91,7 +121,9 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       todayBestCombo: todayBestCombo,
       isCalmMode: prefs.getBool('isCalmMode') ?? false,
     );
+  }
 
+  void _syncAudioWithState() {
     AudioService().setSoundEnabled(state.soundEnabled);
     AudioService().setMusicEnabled(state.musicEnabled);
     AudioService().setSfxEnabled(state.sfxEnabled);
@@ -102,55 +134,81 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     }
   }
 
-  Future<void> _saveState() async {
+  Future<void> _loadStateAsyncFallback() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('displayName', state.displayName);
-    await prefs.setInt('level', state.level);
-    await prefs.setInt('xp', state.xp);
-    await prefs.setInt('xpToNextLevel', state.xpToNextLevel);
-    await prefs.setInt('gems', state.gems);
-    await prefs.setInt('totalChallenges', state.totalChallenges);
-    await prefs.setInt('correctAnswers', state.correctAnswers);
-    await prefs.setInt('bestCombo', state.bestCombo);
-    await prefs.setInt('currentStreak', state.currentStreak);
-    await prefs.setInt('bestStreak', state.bestStreak);
-    await prefs.setInt('bestReactionTimeMs', state.bestReactionTimeMs);
-    if (state.lastPlayedDate != null) {
-      await prefs.setString('lastPlayedDate', state.lastPlayedDate!.toIso8601String());
-    }
-    await prefs.setBool('onboardingComplete', state.onboardingComplete);
-    await prefs.setBool('soundEnabled', state.soundEnabled);
-    await prefs.setBool('musicEnabled', state.musicEnabled);
-    await prefs.setBool('sfxEnabled', state.sfxEnabled);
-    await prefs.setBool('hapticEnabled', state.hapticEnabled);
-    await prefs.setDouble('musicVolume', state.musicVolume);
-    await prefs.setDouble('sfxVolume', state.sfxVolume);
-    await prefs.setInt('worldLevel', state.worldLevel);
-    await prefs.setString('observerId', state.observerId);
-    await prefs.setString('selectedAvatarId', state.selectedAvatarId);
-    await prefs.setString('selectedFrameId', state.selectedFrameId);
-    await prefs.setString('country', state.country);
-    await prefs.setBool('voiceEnabled', state.voiceEnabled);
-    await prefs.setBool('monoAudio', state.monoAudio);
-    await prefs.setDouble('audioBalance', state.audioBalance);
-    await prefs.setDouble('bassWarmth', state.bassWarmth);
-    await prefs.setDouble('sparkleSoftness', state.sparkleSoftness);
-    if (state.lastDailyRewardDate != null) {
-      await prefs.setString('lastDailyRewardDate', state.lastDailyRewardDate!.toIso8601String());
-    }
-    await prefs.setInt('dailyRewardDay', state.dailyRewardDay);
-    await prefs.setStringList('dailyQuestsClaimed', state.dailyQuestsClaimed);
-    await prefs.setInt('todayShiftsPlayed', state.todayShiftsPlayed);
-    await prefs.setInt('todayBestCombo', state.todayBestCombo);
-    await prefs.setBool('isCalmMode', state.isCalmMode);
+    final loaded = _loadInitialState(prefs);
+    state = loaded.copyWith(
+      onboardingComplete: state.onboardingComplete || loaded.onboardingComplete,
+      displayName: state.displayName != 'Observer' ? state.displayName : loaded.displayName,
+    );
+    _syncAudioWithState();
   }
 
-  void completeOnboarding(String name) {
+  Future<void> _saveState() async {
+    if (_isSaving) {
+      _hasPendingSave = true;
+      return;
+    }
+    _isSaving = true;
+    try {
+      do {
+        _hasPendingSave = false;
+        final currentState = state;
+        final prefs = _prefs ?? await SharedPreferences.getInstance();
+        await Future.wait([
+          prefs.setString('displayName', currentState.displayName),
+          prefs.setInt('level', currentState.level),
+          prefs.setInt('xp', currentState.xp),
+          prefs.setInt('xpToNextLevel', currentState.xpToNextLevel),
+          prefs.setInt('gems', currentState.gems),
+          prefs.setInt('totalChallenges', currentState.totalChallenges),
+          prefs.setInt('correctAnswers', currentState.correctAnswers),
+          prefs.setInt('bestCombo', currentState.bestCombo),
+          prefs.setInt('bestScore', currentState.bestScore),
+          prefs.setInt('currentStreak', currentState.currentStreak),
+          prefs.setInt('bestStreak', currentState.bestStreak),
+          prefs.setInt('bestReactionTimeMs', currentState.bestReactionTimeMs),
+          if (currentState.lastPlayedDate != null)
+            prefs.setString('lastPlayedDate', currentState.lastPlayedDate!.toIso8601String()),
+          prefs.setBool('onboardingComplete', currentState.onboardingComplete),
+          prefs.setBool('soundEnabled', currentState.soundEnabled),
+          prefs.setBool('musicEnabled', currentState.musicEnabled),
+          prefs.setBool('sfxEnabled', currentState.sfxEnabled),
+          prefs.setBool('hapticEnabled', currentState.hapticEnabled),
+          prefs.setDouble('musicVolume', currentState.musicVolume),
+          prefs.setDouble('sfxVolume', currentState.sfxVolume),
+          prefs.setInt('worldLevel', currentState.worldLevel),
+          prefs.setString('observerId', currentState.observerId),
+          prefs.setString('selectedAvatarId', currentState.selectedAvatarId),
+          prefs.setString('selectedFrameId', currentState.selectedFrameId),
+          prefs.setString('country', currentState.country),
+          prefs.setBool('voiceEnabled', currentState.voiceEnabled),
+          prefs.setBool('monoAudio', currentState.monoAudio),
+          prefs.setDouble('audioBalance', currentState.audioBalance),
+          prefs.setDouble('bassWarmth', currentState.bassWarmth),
+          prefs.setDouble('sparkleSoftness', currentState.sparkleSoftness),
+          if (currentState.lastDailyRewardDate != null)
+            prefs.setString('lastDailyRewardDate', currentState.lastDailyRewardDate!.toIso8601String()),
+          prefs.setInt('dailyRewardDay', currentState.dailyRewardDay),
+          prefs.setStringList('dailyQuestsClaimed', currentState.dailyQuestsClaimed),
+          prefs.setInt('todayShiftsPlayed', currentState.todayShiftsPlayed),
+          prefs.setInt('todayBestCombo', currentState.todayBestCombo),
+          prefs.setBool('isCalmMode', currentState.isCalmMode),
+        ]);
+      } while (_hasPendingSave);
+    } catch (e, st) {
+      debugPrint('Error saving game state to SharedPreferences: $e\n$st');
+    } finally {
+      _isSaving = false;
+    }
+  }
+
+  Future<void> completeOnboarding(String name) async {
     state = state.copyWith(
-      displayName: name.isEmpty ? 'Observer' : name,
+      displayName: name.trim().isEmpty ? 'Observer' : name.trim(),
       onboardingComplete: true,
     );
-    _saveState();
+    await _saveState();
   }
 
   /// Process a challenge result — update XP, gems, streak, level
@@ -183,6 +241,12 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       } else if (currentCombo >= 3) {
         xpEarned += 5;
         gemsEarned += 3;
+      }
+
+      // Streak reward multiplier
+      if (state.streakMultiplier > 1.0) {
+        xpEarned = (xpEarned * state.streakMultiplier).round();
+        gemsEarned = (gemsEarned * state.streakMultiplier).round();
       }
     }
 
@@ -236,6 +300,21 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       combo: currentCombo,
       challengeType: challengeType,
     );
+  }
+
+  Future<void> addGems(int amount) async {
+    state = state.copyWith(gems: state.gems + amount);
+    await _saveState();
+  }
+
+  /// Update best score and return true if this is a new personal record
+  bool updateBestScore(int score) {
+    if (score > state.bestScore) {
+      state = state.copyWith(bestScore: score);
+      _saveState();
+      return true;
+    }
+    return false;
   }
 
   void updateStreak() {
@@ -430,5 +509,11 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
 
 /// Global provider
 final gameStateProvider = StateNotifierProvider<GameStateNotifier, PlayerState>((ref) {
-  return GameStateNotifier();
+  SharedPreferences? prefs;
+  try {
+    prefs = ref.watch(sharedPreferencesProvider);
+  } catch (_) {
+    // Graceful fallback for standalone tests where ProviderScope doesn't override sharedPreferencesProvider
+  }
+  return GameStateNotifier(prefs);
 });

@@ -97,9 +97,11 @@ void main() {
 
     testWidgets('GameBottomNav renders 3D tactile dock tabs with MAP active', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            bottomNavigationBar: GameBottomNav(currentIndex: 0),
+        const ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              bottomNavigationBar: GameBottomNav(currentIndex: 0),
+            ),
           ),
         ),
       );

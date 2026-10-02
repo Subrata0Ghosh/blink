@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/app_review_share_service.dart';
 import '../../services/audio_service.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
@@ -91,6 +92,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     );
   }
 
+  void _openRateModal() {
+    triggerHaptic(ref, HapticService.mediumTap);
+    AppReviewShareService.showRateDialog(context);
+  }
+
+  void _shareApp() {
+    triggerHaptic(ref, HapticService.lightTap);
+    final player = ref.read(gameStateProvider);
+    AppReviewShareService.shareApp(player: player);
+  }
+
   @override
   Widget build(BuildContext context) {
     final player = ref.watch(gameStateProvider);
@@ -112,101 +124,131 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
 
           // ──── 3. CENTERED CONTENT ────
           SafeArea(
-            child: Column(
-              children: [
-                // Top status pills
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Lives Heart Pill
-                      _buildGlassPill(
-                        icon: Icons.favorite_rounded,
-                        iconColor: const Color(0xFFFF5580),
-                        label: 'Infinite',
-                        glowColor: const Color(0xFFFF5580),
-                        onTap: () {
-                          triggerHaptic(ref, HapticService.lightTap);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Row(
-                                children: [
-                                  const Icon(Icons.favorite_rounded, color: Color(0xFFFF5277), size: 20),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Cosmic Energy is Infinite! No lives lost.',
-                                      style: GoogleFonts.outfit(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              backgroundColor: const Color(0xFF1B233A),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                                side: const BorderSide(color: Color(0xFFFF5277), width: 1.2),
-                              ),
-                              duration: const Duration(seconds: 2),
-                            ),
-                          );
-                        },
-                      ),
-
-                      // Daily Gift Chip (If ready)
-                      if (hasReward)
-                        GestureDetector(
-                          onTap: _openDailyRewards,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF00E5FF), Color(0xFF8B5CF6)],
-                              ),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.cyan.withValues(alpha: 0.6),
-                                  blurRadius: 10,
-                                  spreadRadius: 1,
-                                ),
-                              ],
-                            ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          // Top status pills
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 16),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'GIFT READY',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.white,
-                                    letterSpacing: 0.8,
-                                  ),
+                                // Lives Heart Pill
+                                _buildGlassPill(
+                                  icon: Icons.favorite_rounded,
+                                  iconColor: const Color(0xFFFF5580),
+                                  label: 'Infinite',
+                                  glowColor: const Color(0xFFFF5580),
+                                  onTap: () {
+                                    triggerHaptic(ref, HapticService.lightTap);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Row(
+                                          children: [
+                                            const Icon(Icons.favorite_rounded, color: Color(0xFFFF5277), size: 20),
+                                            const SizedBox(width: 10),
+                                            Expanded(
+                                              child: Text(
+                                                'Cosmic Energy is Infinite! No lives lost.',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        backgroundColor: const Color(0xFF1B233A),
+                                        behavior: SnackBarBehavior.floating,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                          side: const BorderSide(color: Color(0xFFFF5277), width: 1.2),
+                                        ),
+                                        duration: const Duration(seconds: 2),
+                                      ),
+                                    );
+                                  },
+                                ),
+
+                                // Top Right Actions: Share, Rate, Gift, Gems
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _buildIconPill(
+                                      icon: Icons.share_rounded,
+                                      iconColor: AppColors.cyan,
+                                      tooltip: 'Share BLINK',
+                                      onTap: _shareApp,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    _buildIconPill(
+                                      icon: Icons.star_rounded,
+                                      iconColor: const Color(0xFFFFD700),
+                                      tooltip: 'Rate BLINK (+50 Gems)',
+                                      onTap: _openRateModal,
+                                    ),
+                                    const SizedBox(width: 6),
+
+                                    // Daily Gift Chip (If ready)
+                                    if (hasReward) ...[
+                                      GestureDetector(
+                                        onTap: _openDailyRewards,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            gradient: const LinearGradient(
+                                              colors: [Color(0xFF00E5FF), Color(0xFF8B5CF6)],
+                                            ),
+                                            borderRadius: BorderRadius.circular(20),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: AppColors.cyan.withValues(alpha: 0.6),
+                                                blurRadius: 10,
+                                                spreadRadius: 1,
+                                              ),
+                                            ],
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 15),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'GIFT',
+                                                style: GoogleFonts.outfit(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w900,
+                                                  color: Colors.white,
+                                                  letterSpacing: 0.8,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                    ],
+
+                                    // Gems Pill
+                                    _buildGlassPill(
+                                      icon: Icons.diamond_rounded,
+                                      iconColor: AppColors.gemCyan,
+                                      label: '${player.gems > 0 ? player.gems : 250}',
+                                      glowColor: AppColors.gemCyan,
+                                      onTap: _openDailyRewards,
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
-                        ),
-
-                      // Gems Pill
-                      _buildGlassPill(
-                        icon: Icons.diamond_rounded,
-                        iconColor: AppColors.gemCyan,
-                        label: '${player.gems > 0 ? player.gems : 250}',
-                        glowColor: AppColors.gemCyan,
-                        onTap: _openDailyRewards,
-                      ),
-                    ],
-                  ),
-                ),
 
                 const Spacer(),
 
@@ -314,11 +356,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // Active Daily Streak Multiplier Pill
+                      if (player.currentStreak > 0)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF2E1A47), Color(0xFF1E2640)],
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                            border: Border.all(
+                              color: AppColors.gold.withValues(alpha: 0.6),
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.gold.withValues(alpha: 0.2),
+                                blurRadius: 12,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('🔥', style: TextStyle(fontSize: 16)),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${player.currentStreak}-DAY STREAK: ${player.streakMultiplier}x XP & GEMS ACTIVE!',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.gold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
                       // Giant Cosmic Cyan 3D "Play" Button
                       TactileButton.cosmic(
                         label: 'PLAY',
                         fontSize: 28,
-                        height: 66,
+                        height: 64,
                         width: double.infinity,
                         onTap: () {
                           triggerHaptic(ref, HapticService.mediumTap);
@@ -327,7 +409,46 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                         },
                       ),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 10),
+
+                      // Row 1: VS DUEL (Multiplayer) & RANKINGS (Leaderboard)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TactileButton(
+                              label: 'VS DUEL',
+                              fontSize: 14,
+                              height: 48,
+                              icon: Icons.sports_esports_rounded,
+                              faceColorTop: const Color(0xFFFF3366),
+                              faceColorBottom: const Color(0xFFC2185B),
+                              rimColor: const Color(0xFF880E4F),
+                              onTap: () {
+                                triggerHaptic(ref, HapticService.mediumTap);
+                                context.push('/multiplayer');
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: TactileButton(
+                              label: 'RANKINGS',
+                              fontSize: 14,
+                              height: 48,
+                              icon: Icons.leaderboard_rounded,
+                              faceColorTop: const Color(0xFFFFB703),
+                              faceColorBottom: const Color(0xFFFB8500),
+                              rimColor: const Color(0xFFB75700),
+                              onTap: () {
+                                triggerHaptic(ref, HapticService.mediumTap);
+                                context.push('/leaderboard');
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 10),
 
                       // Secondary Row: Level Map & Calm Zen Mode
                       Row(
@@ -335,8 +456,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                           Expanded(
                             child: TactileButton.nebula(
                               label: 'LEVEL MAP',
-                              fontSize: 15,
-                              height: 48,
+                              fontSize: 14,
+                              height: 46,
                               icon: Icons.map_rounded,
                               onTap: () {
                                 triggerHaptic(ref, HapticService.mediumTap);
@@ -348,8 +469,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                           Expanded(
                             child: TactileButton(
                               label: 'CALM ZEN',
-                              fontSize: 15,
-                              height: 48,
+                              fontSize: 14,
+                              height: 46,
                               icon: Icons.spa_rounded,
                               faceColorTop: const Color(0xFF00B4D8),
                               faceColorBottom: const Color(0xFF0077B6),
@@ -487,8 +608,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                   ),
                 ),
 
-                const SizedBox(height: 32),
-              ],
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],
@@ -533,6 +659,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIconPill({
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+    String? tooltip,
+  }) {
+    return Tooltip(
+      message: tooltip ?? '',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppColors.glassWhite,
+            shape: BoxShape.circle,
+            border: Border.all(color: AppColors.glassBorder, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: iconColor.withValues(alpha: 0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(icon, color: iconColor, size: 17),
         ),
       ),
     );

@@ -18,6 +18,9 @@ import '../../widgets/particles/particles.dart';
 import '../../services/audio_service.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../widgets/animations/feedback_overlays.dart';
+import '../../widgets/animations/achievement_popup.dart';
 
 /// Play screen — The Core Gameplay Loop of BLINK
 /// Powered by:
@@ -62,8 +65,18 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
   int _countdownValue = 3;
   bool _showPerfect = false;
   bool _showEnergyRing = false;
+  bool _showScreenFlash = false;
+  bool _showConfetti = false;
+  bool _showComboPopup = false;
+  bool _showCorrectGlow = false;
+  bool _showRedVignette = false;
   int? _selectedAnswer;
   bool? _lastAnswerCorrect;
+  Achievement? _activeAchievement;
+  int _perfectStreak = 0;
+  bool _isBonusRound = false;
+  int _consecutiveMisses = 0;
+  bool _showGemRain = false;
 
   // 2.5D Spawning & World Shift flags
   bool _isSpawning = false;
@@ -132,10 +145,22 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
   void _startRound() {
     final player = ref.read(gameStateProvider);
     final mode = _engine.getRandomUnlockedMode(player.level);
-    final difficulty = player.level + (_round - 1) * 2;
+
+    // ── Adaptive Difficulty Engine ──
+    // Scale up difficulty if player has a combo going
+    final comboBoost = (_combo * 2).clamp(0, 8);
+    // Dial back difficulty with assistance if player is struggling
+    final strugglePenalty = _consecutiveMisses > 1 ? -4 : (_lastAnswerCorrect == false ? -2 : 0);
+    final baseDifficulty = player.level + (_round - 1) * 2;
+    final adaptiveDifficulty = max(1, baseDifficulty + comboBoost + strugglePenalty);
+
+    // ── Bonus Round System ──
+    // Round 5 is the climactic Cosmic Bonus Round (2x Gems)
+    final isBonus = _round == 5;
 
     setState(() {
-      _challenge = _engine.generateChallenge(mode: mode, difficulty: difficulty);
+      _isBonusRound = isBonus;
+      _challenge = _engine.generateChallenge(mode: mode, difficulty: adaptiveDifficulty);
       _phase = _GamePhase.intro;
       _selectedAnswer = null;
       _lastAnswerCorrect = null;
@@ -172,7 +197,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
     });
     _sceneController.forward(from: 0);
     final player = ref.read(gameStateProvider);
-    _timeLeft = player.isCalmMode ? (_challenge!.observeTime + 3.5) : _challenge!.observeTime;
+    final assistance = _consecutiveMisses > 1 ? 0.75 : 0.0;
+    _timeLeft = player.isCalmMode ? (_challenge!.observeTime + 3.5) : (_challenge!.observeTime + assistance);
 
     // Timer for observation
     _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
@@ -265,15 +291,60 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       _totalGems += result.gemsEarned;
       _score += 100 + (_combo * 15);
 
+      _correctCount++;
+      _consecutiveMisses = 0;
+
+      // ── Bonus Round 2x Gems ──
+      if (_isBonusRound) {
+        ref.read(gameStateProvider.notifier).addGems(result.gemsEarned);
+        _totalGems += result.gemsEarned;
+        setState(() {
+          _showConfetti = true;
+          _showGemRain = true;
+        });
+        AudioService().playGemPickup();
+      }
+
       triggerHaptic(ref, HapticService.correctAnswer);
       if (result.isPerfect) {
         AudioService().playPerfect();
+        setState(() => _showScreenFlash = true);
       } else {
         AudioService().playCorrect();
       }
+
+      // Always show green edge glow on correct
+      setState(() => _showCorrectGlow = true);
+
       if (_combo > 1) {
         AudioService().playCombo();
       }
+      // Show combo popup for combos >= 2, confetti for >= 3
+      if (_combo >= 3) {
+        setState(() {
+          _showConfetti = true;
+          _showComboPopup = true;
+        });
+      } else if (_combo >= 2) {
+        setState(() => _showComboPopup = true);
+      }
+
+      // ── Achievement triggers ──
+      if (result.isPerfect) {
+        _perfectStreak++;
+        _checkAchievement(Achievements.firstPerfect, () => true);
+        if (_perfectStreak >= 5) {
+          _checkAchievement(Achievements.sharpEyes, () => true);
+        }
+      } else {
+        _perfectStreak = 0;
+      }
+      if (result.reactionTimeMs < 1000 && result.correct) {
+        _checkAchievement(Achievements.speedDemon, () => true);
+      }
+      if (_combo >= 3) _checkAchievement(Achievements.combo3, () => true);
+      if (_combo >= 5) _checkAchievement(Achievements.combo5, () => true);
+      if (_combo >= 10) _checkAchievement(Achievements.combo10, () => true);
 
       if (result.isPerfect) {
         setState(() {
@@ -297,6 +368,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       });
     } else {
       _combo = 0;
+      _consecutiveMisses++;
       ref.read(gameStateProvider.notifier).processChallengeResult(
         correct: false,
         reactionTimeMs: reactionTime,
@@ -306,6 +378,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       triggerHaptic(ref, HapticService.wrongAnswer);
       AudioService().playWrong();
       _shakeController.forward(from: 0);
+      setState(() => _showRedVignette = true);
 
       Future.delayed(const Duration(milliseconds: 1800), () {
         if (mounted) {
@@ -322,6 +395,30 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
   void _onAnswerTimeout() {
     _onAnswerSelected(-1); // Treat timeout as wrong
+  }
+
+  void _checkAchievement(Achievement achievement, bool Function() condition) async {
+    if (!condition() || _activeAchievement != null) return;
+    try {
+      SharedPreferences? prefs;
+      try {
+        prefs = ref.read(sharedPreferencesProvider);
+      } catch (_) {
+        prefs = await SharedPreferences.getInstance();
+      }
+      if (prefs == null) return;
+      final key = 'achievement_${achievement.id}';
+      if (prefs.getBool(key) == true) return;
+      await prefs.setBool(key, true);
+      ref.read(gameStateProvider.notifier).addGems(achievement.gemReward);
+      AudioService().playLevelUp();
+      triggerHaptic(ref, HapticService.mediumTap);
+      if (mounted) {
+        setState(() {
+          _activeAchievement = achievement;
+        });
+      }
+    } catch (_) {}
   }
 
   void _goToResult() {
@@ -463,6 +560,70 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                 },
               ),
             ),
+
+          // ──── RICH FEEDBACK OVERLAYS ────
+          // Green edge glow on correct answer
+          if (_showCorrectGlow)
+            Positioned.fill(
+              child: CorrectEdgeGlow(
+                onComplete: () => setState(() => _showCorrectGlow = false),
+              ),
+            ),
+
+          // Red vignette on wrong answer
+          if (_showRedVignette)
+            Positioned.fill(
+              child: RedVignette(
+                onComplete: () => setState(() => _showRedVignette = false),
+              ),
+            ),
+
+          // Screen flash on PERFECT
+          if (_showScreenFlash)
+            Positioned.fill(
+              child: ScreenFlash(
+                onComplete: () => setState(() => _showScreenFlash = false),
+              ),
+            ),
+
+          // Confetti cascade on high combos
+          if (_showConfetti)
+            Positioned.fill(
+              child: ConfettiCascade(
+                onComplete: () => setState(() => _showConfetti = false),
+              ),
+            ),
+
+          // 3D Gem Rain Shower on Bonus Round
+          if (_showGemRain)
+            Positioned.fill(
+              child: GemRainShower(
+                onComplete: () => setState(() => _showGemRain = false),
+              ),
+            ),
+
+          // Combo multiplier popup
+          if (_showComboPopup && _combo >= 2)
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.3,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: ComboPopup(
+                  combo: _combo,
+                  onComplete: () => setState(() => _showComboPopup = false),
+                ),
+              ),
+            ),
+
+          // Achievement unlocked popup
+          if (_activeAchievement != null)
+            AchievementPopup(
+              achievement: _activeAchievement!,
+              onComplete: () {
+                if (mounted) setState(() => _activeAchievement = null);
+              },
+            ),
         ],
       ),
     );
@@ -512,14 +673,41 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      _showDebug ? 'DEBUG ROUND $_round / 5' : 'ROUND $_round / 5',
+                      _isBonusRound
+                          ? '⚡ BONUS ROUND $_round / 5'
+                          : (_showDebug ? 'DEBUG ROUND $_round / 5' : 'ROUND $_round / 5'),
                       style: GoogleFonts.outfit(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: _isBonusRound ? AppColors.gold : AppColors.textPrimary,
                         letterSpacing: 1.0,
                       ),
                     ),
+                    if (_isBonusRound)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.gold, width: 1),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text('💎', style: TextStyle(fontSize: 10)),
+                            const SizedBox(width: 3),
+                            Text(
+                              '2x GEMS',
+                              style: GoogleFonts.outfit(
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.gold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     if (ref.watch(gameStateProvider).isCalmMode)
                       Container(
                         margin: const EdgeInsets.only(left: 6),
@@ -849,6 +1037,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                   spawnIndex: index,
                   isSpawning: _isSpawning,
                   showDebugLabel: _showDebug,
+                  isVictory: _lastAnswerCorrect == true,
+                  isWrong: _lastAnswerCorrect == false,
                   onTap: () {
                     // Tactile tap feedback on arena object
                   },

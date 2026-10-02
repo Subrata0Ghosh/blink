@@ -209,6 +209,9 @@ class AudioService {
   Future<void> playGemPickup() async => _playSfx('gem_pickup');
   Future<void> playLevelUp() async => _playSfx('level_up');
   Future<void> playChestOpen() async => _playSfx('chest_open');
+  Future<void> playMysteryStinger() async => _playSfx('chest_open');
+  Future<void> playTransitionWhoosh() async => _playSfx('ui_confirm');
+  Future<void> playResultStinger() async => _playSfx('level_up');
 
   Future<void> _playSfx(String name) async {
     if (!_soundEnabled || !_sfxEnabled || _sfxVolume <= 0) return;

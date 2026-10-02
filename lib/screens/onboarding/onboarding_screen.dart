@@ -91,194 +91,217 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     }
   }
 
-  void _completeOnboarding() {
-    ref.read(gameStateProvider.notifier).completeOnboarding(_nameController.text);
+  Future<void> _completeOnboarding() async {
+    await ref.read(gameStateProvider.notifier).completeOnboarding(_nameController.text);
     widget.onComplete();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Stack(
-        children: [
-          const StarField(starCount: 60),
-          const FloatingParticles(count: 10, color: AppColors.primaryLight),
-          SafeArea(
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (i) => setState(() => _currentPage = i),
-              physics: const BouncingScrollPhysics(),
-              children: [
-                ..._pages.map((page) => _buildIntroPage(page)),
-                _buildNamePage(),
-              ],
+    final viewInsetsBottom = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardOpen = viewInsetsBottom > 0;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        resizeToAvoidBottomInset: true,
+        body: Stack(
+          children: [
+            const StarField(starCount: 60),
+            const FloatingParticles(count: 10, color: AppColors.primaryLight),
+            SafeArea(
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (i) => setState(() => _currentPage = i),
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  ..._pages.map((page) => _buildIntroPage(page)),
+                  _buildNamePage(isKeyboardOpen),
+                ],
+              ),
             ),
-          ),
-          // ──── 3D PAGE INDICATORS & TACTILE NAVIGATION ────
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: Column(
-              children: [
-                // 3D Pill Dots
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(4, (i) {
-                    final isActive = _currentPage == i;
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.symmetric(horizontal: 5),
-                      width: isActive ? 34 : 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                        gradient: isActive
-                            ? const LinearGradient(
-                                colors: [AppColors.cosmicCyanLight, AppColors.cosmicCyanDark],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              )
-                            : null,
-                        color: isActive ? null : const Color(0xFF161F36),
-                        border: Border.all(
-                          color: isActive
-                              ? Colors.white.withValues(alpha: 0.8)
-                              : Colors.white.withValues(alpha: 0.12),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          if (isActive)
-                            BoxShadow(
-                              color: AppColors.cyan.withValues(alpha: 0.6),
-                              blurRadius: 10,
-                              spreadRadius: 1,
-                            ),
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.4),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1.5),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ),
-                const SizedBox(height: 28),
-                // 3D Candy Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 36),
-                  child: _currentPage < 3
-                      ? TactileButton.cosmic(
-                          label: 'NEXT',
-                          fontSize: 18,
-                          height: 56,
-                          onTap: _nextPage,
-                        )
-                      : TactileButton.cosmic(
-                          label: 'START JOURNEY',
-                          fontSize: 18,
-                          height: 56,
-                          onTap: _completeOnboarding,
-                        ),
-                ),
-              ],
-            ),
-          ),
-          // 3D Skip button
-          if (_currentPage < 3)
+            // ──── 3D PAGE INDICATORS & TACTILE NAVIGATION ────
             Positioned(
-              top: MediaQuery.of(context).padding.top + 12,
-              right: 20,
-              child: GestureDetector(
-                onTap: () {
-                  _pageController.animateToPage(
-                    3,
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeOutCubic,
-                  );
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface.withValues(alpha: 0.6),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      width: 1.2,
+              bottom: isKeyboardOpen ? 12 : (bottomPadding > 0 ? bottomPadding + 14 : 36),
+              left: 0,
+              right: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 3D Pill Dots (hidden when keyboard is open to preserve screen real estate)
+                  if (!isKeyboardOpen) ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(4, (i) {
+                        final isActive = _currentPage == i;
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.symmetric(horizontal: 5),
+                          width: isActive ? 34 : 10,
+                          height: 10,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                            gradient: isActive
+                                ? const LinearGradient(
+                                    colors: [AppColors.cosmicCyanLight, AppColors.cosmicCyanDark],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  )
+                                : null,
+                            color: isActive ? null : const Color(0xFF161F36),
+                            border: Border.all(
+                              color: isActive
+                                  ? Colors.white.withValues(alpha: 0.8)
+                                  : Colors.white.withValues(alpha: 0.12),
+                              width: 1.0,
+                            ),
+                            boxShadow: [
+                              if (isActive)
+                                BoxShadow(
+                                  color: AppColors.cyan.withValues(alpha: 0.6),
+                                  blurRadius: 10,
+                                  spreadRadius: 1,
+                                ),
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.4),
+                                blurRadius: 3,
+                                offset: const Offset(0, 1.5),
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.4),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    const SizedBox(height: 24),
+                  ],
+                  // 3D Candy Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 36),
+                    child: _currentPage < 3
+                        ? TactileButton.cosmic(
+                            label: 'NEXT',
+                            fontSize: isKeyboardOpen ? 16 : 18,
+                            height: isKeyboardOpen ? 50 : 56,
+                            onTap: _nextPage,
+                          )
+                        : TactileButton.cosmic(
+                            label: 'START JOURNEY',
+                            fontSize: isKeyboardOpen ? 16 : 18,
+                            height: isKeyboardOpen ? 50 : 56,
+                            onTap: _completeOnboarding,
+                          ),
                   ),
-                  child: Text(
-                    'SKIP',
-                    style: GoogleFonts.outfit(
-                      color: AppColors.textMuted,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.5,
+                ],
+              ),
+            ),
+            // 3D Skip button
+            if (_currentPage < 3)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 12,
+                right: 20,
+                child: GestureDetector(
+                  onTap: () {
+                    _pageController.animateToPage(
+                      3,
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.easeOutCubic,
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface.withValues(alpha: 0.6),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1.2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      'SKIP',
+                      style: GoogleFonts.outfit(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildIntroPage(_OnboardingPage page) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 3D Floating Living Celestial Emblem with Orbiting Energy Rings
-          _buildAnimatedEmblem(page),
-          const SizedBox(height: 44),
-          // 3D Embossed Title
-          Text(
-            page.title,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.3,
-              shadows: [
-                Shadow(
-                  color: page.gradientColors[0].withValues(alpha: 0.8),
-                  offset: const Offset(0, 2),
-                  blurRadius: 2,
-                ),
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  offset: const Offset(0, 4),
-                  blurRadius: 8,
-                ),
-              ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 36),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 24),
+                  // 3D Floating Living Celestial Emblem with Orbiting Energy Rings
+                  _buildAnimatedEmblem(page),
+                  const SizedBox(height: 36),
+                  // 3D Embossed Title
+                  Text(
+                    page.title,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -0.3,
+                      shadows: [
+                        Shadow(
+                          color: page.gradientColors[0].withValues(alpha: 0.8),
+                          offset: const Offset(0, 2),
+                          blurRadius: 2,
+                        ),
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          offset: const Offset(0, 4),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    page.subtitle,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                      color: AppColors.textSecondary,
+                      height: 1.55,
+                    ),
+                  ),
+                  const SizedBox(height: 140), // Space for bottom button & dots
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 14),
-          Text(
-            page.subtitle,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-              color: AppColors.textSecondary,
-              height: 1.55,
-            ),
-          ),
-          const SizedBox(height: 50),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -461,114 +484,133 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen>
     );
   }
 
-  Widget _buildNamePage() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 36),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // ──── INTERACTIVE 3D NOVA COMPANION ON HOLOGRAM BASE ────
-          const Center(
-            child: TactileNovaCompanion(
-              size: 135,
-              showHologramRing: true,
-              enableDialogue: true,
+  Widget _buildNamePage(bool isKeyboardOpen) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 36),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
             ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'What\'s your name?',
-            style: GoogleFonts.outfit(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              shadows: [
-                const Shadow(
-                  color: Color(0xFF007A99),
-                  offset: Offset(0, 2),
-                  blurRadius: 2,
-                ),
-                Shadow(
-                  color: Colors.black.withValues(alpha: 0.4),
-                  offset: const Offset(0, 4),
-                  blurRadius: 6,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Choose a name for your cosmic observer.',
-            style: GoogleFonts.outfit(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 28),
-          // 3D Recessed Console Entry Slot
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFF0C1122),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: AppColors.cyan.withValues(alpha: 0.6),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.7),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: AppColors.cyan.withValues(alpha: 0.2),
-                  blurRadius: 16,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.cyan.withValues(alpha: 0.2),
-                    border: Border.all(color: AppColors.cyan.withValues(alpha: 0.5)),
+            child: IntrinsicHeight(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (isKeyboardOpen) const SizedBox(height: 8),
+                  // ──── INTERACTIVE 3D NOVA COMPANION ON HOLOGRAM BASE ────
+                  Center(
+                    child: TactileNovaCompanion(
+                      size: isKeyboardOpen ? 68 : 135,
+                      showHologramRing: !isKeyboardOpen,
+                      enableDialogue: !isKeyboardOpen,
+                    ),
                   ),
-                  child: const Center(
-                    child: Icon(Icons.person_outline_rounded, color: AppColors.cyan, size: 18),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _nameController,
+                  SizedBox(height: isKeyboardOpen ? 12 : 24),
+                  Text(
+                    'What\'s your name?',
                     style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
+                      fontSize: isKeyboardOpen ? 24 : 28,
+                      fontWeight: FontWeight.w800,
                       color: Colors.white,
-                    ),
-                    textAlign: TextAlign.start,
-                    decoration: InputDecoration(
-                      hintText: 'Enter Observer Name',
-                      hintStyle: GoogleFonts.outfit(
-                        fontSize: 16,
-                        color: AppColors.textMuted.withValues(alpha: 0.6),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      shadows: [
+                        const Shadow(
+                          color: Color(0xFF007A99),
+                          offset: Offset(0, 2),
+                          blurRadius: 2,
+                        ),
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.4),
+                          offset: const Offset(0, 4),
+                          blurRadius: 6,
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  Text(
+                    'Choose a name for your cosmic observer.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      fontSize: isKeyboardOpen ? 13 : 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  SizedBox(height: isKeyboardOpen ? 16 : 28),
+                  // 3D Recessed Console Entry Slot
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0C1122),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: AppColors.cyan.withValues(alpha: 0.8),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          blurRadius: 8,
+                          offset: const Offset(0, 4),
+                        ),
+                        BoxShadow(
+                          color: AppColors.cyan.withValues(alpha: 0.3),
+                          blurRadius: 16,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.cyan.withValues(alpha: 0.2),
+                            border: Border.all(color: AppColors.cyan.withValues(alpha: 0.5)),
+                          ),
+                          child: const Center(
+                            child: Icon(Icons.person_outline_rounded, color: AppColors.cyan, size: 18),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: _nameController,
+                            cursorColor: AppColors.cyan,
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: (_) => _completeOnboarding(),
+                            scrollPadding: const EdgeInsets.only(bottom: 84),
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.start,
+                            decoration: InputDecoration(
+                              hintText: 'Enter Observer Name',
+                              hintStyle: GoogleFonts.outfit(
+                                fontSize: 16,
+                                color: AppColors.textMuted.withValues(alpha: 0.6),
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Space for the bottom button so it never overlaps the text field
+                  SizedBox(height: isKeyboardOpen ? 84 : 140),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 100), // Space for button at bottom
-        ],
-      ),
+        );
+      },
     );
   }
 }

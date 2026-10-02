@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 import '../../models/player_state.dart';
+import '../../services/app_review_share_service.dart';
 import '../../services/game_state_service.dart';
 import '../../services/audio_service.dart';
 import '../../services/notification_service.dart';
@@ -16,6 +18,7 @@ import '../../widgets/sliders/tactile_jelly_slider.dart';
 import '../../widgets/sliders/tactile_jelly_switch.dart';
 import 'more_audio_modal.dart';
 import 'observer_edit_modal.dart';
+import '../../widgets/achievements/achievements_showcase_section.dart';
 
 /// Observer Profile & Audio Control Center for BLINK
 /// Features:
@@ -205,6 +208,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                   const SizedBox(height: 24),
 
+                  // ──── ACHIEVEMENTS & TROPHIES ────
+                  const AchievementsShowcaseSection(),
+
+                  const SizedBox(height: 24),
+
                   // ──── HAPTICS & ACCESSIBILITY ────
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -375,6 +383,85 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ],
                     ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // ──── MULTIPLAYER & COMMUNITY ────
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'MULTIPLAYER & COMMUNITY',
+                      style: GoogleFonts.outfit(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textMuted,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Leaderboard / Cosmic Rankings Card
+                  _buildActionCard(
+                    icon: Icons.leaderboard_rounded,
+                    iconColor: const Color(0xFFFFB703),
+                    title: 'Cosmic Leaderboard',
+                    subtitle: 'Global observer rankings & duel stats',
+                    actionLabel: 'VIEW',
+                    actionColors: [const Color(0xFFFFB703), const Color(0xFFFB8500)],
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/leaderboard');
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Offline Multiplayer Duels Card
+                  _buildActionCard(
+                    icon: Icons.sports_esports_rounded,
+                    iconColor: const Color(0xFFFF4081),
+                    title: 'Offline Multiplayer Duel',
+                    subtitle: 'Pass & play buzzer or local Wi-Fi / Hotspot',
+                    actionLabel: 'DUEL',
+                    actionColors: [const Color(0xFFFF4081), const Color(0xFFC2185B)],
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      context.push('/multiplayer');
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Share App Card
+                  _buildActionCard(
+                    icon: Icons.share_rounded,
+                    iconColor: AppColors.cyan,
+                    title: 'Invite Friends & Share BLINK',
+                    subtitle: 'Share your cosmic journey with fellow observers',
+                    actionLabel: 'SHARE',
+                    actionColors: [const Color(0xFF00E5FF), const Color(0xFF0097A7)],
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      AppReviewShareService.shareApp(player: player);
+                    },
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Rate App Card
+                  _buildActionCard(
+                    icon: Icons.star_rounded,
+                    iconColor: const Color(0xFFFFD700),
+                    title: 'Rate BLINK & Support Us',
+                    subtitle: 'Share your feedback & claim 50 free gems!',
+                    actionLabel: '+50 💎',
+                    actionColors: [const Color(0xFFFFD700), const Color(0xFFFFA000)],
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      AppReviewShareService.showRateDialog(context);
+                    },
                   ),
 
                   const SizedBox(height: 30),
@@ -943,6 +1030,90 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String subtitle,
+    required String actionLabel,
+    required List<Color> actionColors,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.glassBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: iconColor.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: iconColor.withValues(alpha: 0.35)),
+            ),
+            child: Icon(icon, color: iconColor, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.outfit(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  subtitle,
+                  style: GoogleFonts.outfit(
+                    fontSize: 11,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: actionColors),
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: actionColors.first.withValues(alpha: 0.35),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                actionLabel,
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.8,
+                ),
+              ),
             ),
           ),
         ],

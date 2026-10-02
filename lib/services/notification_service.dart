@@ -99,8 +99,10 @@ class NotificationService {
       final androidImpl = _notificationsPlugin.resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
       if (androidImpl != null) {
-        final granted = await androidImpl.requestNotificationsPermission();
-        return granted ?? false;
+        final notifGranted = await androidImpl.requestNotificationsPermission() ?? false;
+        final exactGranted = await androidImpl.requestExactAlarmsPermission() ?? false;
+        debugPrint('Notification permissions - notifications: $notifGranted, exact alarms: $exactGranted');
+        return notifGranted;
       }
       return true;
     } catch (e) {
@@ -155,10 +157,11 @@ class NotificationService {
 
   /// Schedule re-engagement reminders when user exits the app
   /// Scheduled at:
-  /// - 2 hours after exit
-  /// - 12 hours after exit
-  /// - 24 hours after exit
-  /// - 48 hours after exit
+  /// - 10 minutes after exit (prompt atmospheric nudge, easily testable)
+  /// - 1 hour after exit (energy restored)
+  /// - 6 hours after exit (mystery portal ready)
+  /// - 24 hours after exit (streak protector)
+  /// - 48 hours after exit (cosmic return bounty)
   Future<void> scheduleInactivityReminders() async {
     if (!_isInitialized) await init();
 
@@ -166,9 +169,21 @@ class NotificationService {
       // Cancel previous scheduled reminders before rescheduling new ones
       await cancelAllReminders();
 
+      final androidImpl = _notificationsPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      bool canExact = false;
+      try {
+        canExact = await androidImpl?.canScheduleExactNotifications() ?? false;
+      } catch (_) {}
+
+      final scheduleMode = canExact
+          ? AndroidScheduleMode.exactAllowWhileIdle
+          : AndroidScheduleMode.inexactAllowWhileIdle;
+
       final offsets = [
-        const Duration(hours: 2),
-        const Duration(hours: 12),
+        const Duration(minutes: 10),
+        const Duration(hours: 1),
+        const Duration(hours: 6),
         const Duration(hours: 24),
         const Duration(hours: 48),
       ];
@@ -199,21 +214,72 @@ class NotificationService {
           body: reminder['body'],
           scheduledDate: scheduledTime,
           notificationDetails: notifDetails,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          androidScheduleMode: scheduleMode,
         );
       }
-      debugPrint('Scheduled ${offsets.length} cosmic inactivity reminders.');
+      debugPrint('Scheduled ${offsets.length} cosmic inactivity reminders (exact: $canExact).');
     } catch (e) {
       debugPrint('Error scheduling inactivity reminders: $e');
     }
   }
 
+  /// Schedule a quick test notification for immediate validation (e.g. 15 seconds after exit)
+  Future<void> scheduleTestReminder({Duration delay = const Duration(seconds: 15)}) async {
+    if (!_isInitialized) await init();
+
+    try {
+      final scheduledTime = tz.TZDateTime.now(tz.local).add(delay);
+      const androidDetails = AndroidNotificationDetails(
+        'blink_cosmic_reminders',
+        'Cosmic Shifts & Reminders',
+        channelDescription: 'Atmospheric alerts when new portals open in BLINK.',
+        importance: Importance.high,
+        priority: Priority.high,
+        color: Color(0xFF00E5FF),
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const notifDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: DarwinNotificationDetails(),
+      );
+
+      final androidImpl = _notificationsPlugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      bool canExact = false;
+      try {
+        canExact = await androidImpl?.canScheduleExactNotifications() ?? false;
+      } catch (_) {}
+
+      await _notificationsPlugin.zonedSchedule(
+        id: 999,
+        title: 'The Cosmos misses your keen eye! ✨',
+        body: 'Reality changed while you were away. Come blink and discover what shifted.',
+        scheduledDate: scheduledTime,
+        notificationDetails: notifDetails,
+        androidScheduleMode: canExact
+            ? AndroidScheduleMode.exactAllowWhileIdle
+            : AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+      debugPrint('Test reminder scheduled for ${delay.inSeconds} seconds from now.');
+    } catch (e) {
+      debugPrint('Error scheduling test reminder: $e');
+    }
+  }
+
+  /// Trigger an in-app atmospheric nudge when user has been idle/inactive
+  Future<void> triggerInAppInactivityNudge() async {
+    await showInstantNotification(
+      title: 'Are you still observing? 🌌',
+      body: 'Reality shifts constantly in BLINK. Tap or look around to resume your cosmic journey!',
+      payload: 'in_app_inactivity',
+    );
+  }
+
   /// Cancel scheduled reminders (called when user opens or resumes the app)
   Future<void> cancelAllReminders() async {
     try {
-      for (int i = 0; i < 20; i++) {
-        await _notificationsPlugin.cancel(id: 100 + i);
-      }
+      await _notificationsPlugin.cancelAll();
       debugPrint('Cancelled scheduled pending reminders.');
     } catch (e) {
       debugPrint('Error cancelling reminders: $e');

@@ -33,7 +33,12 @@ class TactileObject extends ConsumerStatefulWidget {
     this.isSpawning = false,
     this.onTap,
     this.showDebugLabel = false,
+    this.isVictory = false,
+    this.isWrong = false,
   });
+
+  final bool isVictory;
+  final bool isWrong;
 
   @override
   ConsumerState<TactileObject> createState() => _TactileObjectState();
@@ -121,6 +126,9 @@ class _TactileObjectState extends ConsumerState<TactileObject>
       _spawnController.reset();
       _runSpawnSequence();
     }
+    if (widget.isVictory && !oldWidget.isVictory) {
+      _tapController.forward(from: 0.0);
+    }
   }
 
   @override
@@ -205,28 +213,45 @@ class _TactileObjectState extends ConsumerState<TactileObject>
                   ),
                 ),
 
-                // 2. Tactile Interactive Body
+                // 2. Tactile Interactive Body with Victory/Wrong response
                 Positioned(
                   top: 8 + floatOffsetY,
-                  child: GestureDetector(
-                    onTapDown: _handleTapDown,
-                    onTapUp: _handleTapUp,
-                    onTapCancel: _handleTapCancel,
-                    behavior: HitTestBehavior.opaque,
+                  child: Transform.translate(
+                    offset: Offset(widget.isWrong ? sin(t * 24 * pi) * 3.5 : 0, 0),
+                    child: GestureDetector(
+                      onTapDown: _handleTapDown,
+                      onTapUp: _handleTapUp,
+                      onTapCancel: _handleTapCancel,
+                      behavior: HitTestBehavior.opaque,
                     child: Transform(
                       alignment: Alignment.center,
                       transform: object3dMatrix,
                       child: SizedBox(
                         width: effectiveSize,
                         height: effectiveSize,
-                        child: CustomPaint(
-                          painter: _getPainter(t),
-                          size: Size(effectiveSize, effectiveSize),
+                        child: Stack(
+                          children: [
+                            CustomPaint(
+                              painter: _getPainter(t),
+                              size: Size(effectiveSize, effectiveSize),
+                            ),
+                            // Shimmer highlight sweep across the object
+                            ClipOval(
+                              child: CustomPaint(
+                                painter: _ShimmerSweepPainter(
+                                  progress: t,
+                                  color: widget.gameObject.color,
+                                ),
+                                size: Size(effectiveSize, effectiveSize),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
+              ),
 
                 // 3. Debug Label (hidden in commercial gameplay)
                 if (widget.showDebugLabel)
@@ -314,4 +339,54 @@ class _TactileObjectState extends ConsumerState<TactileObject>
         );
     }
   }
+}
+
+/// Draws a diagonal shimmer highlight sweep across the object surface
+/// Simulates light catching a crystal / gem as it rotates
+class _ShimmerSweepPainter extends CustomPainter {
+  final double progress;
+  final Color color;
+
+  _ShimmerSweepPainter({required this.progress, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Shimmer occurs during 0.0..0.3 of the idle cycle, then rests
+    final cycle = (progress * 2.0) % 1.0;
+    if (cycle > 0.4) return;
+
+    final t = cycle / 0.4; // normalize 0..1
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    // Diagonal sweep from bottom-left to top-right
+    final sweepX = -radius * 1.5 + (radius * 3.0 * t);
+    final sweepWidth = radius * 0.5;
+    final alpha = (sin(t * pi) * 0.35).clamp(0.0, 0.35);
+
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Colors.transparent,
+          Colors.white.withValues(alpha: alpha),
+          Colors.white.withValues(alpha: alpha * 0.7),
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.4, 0.6, 1.0],
+      ).createShader(Rect.fromLTWH(sweepX, 0, sweepWidth * 2, size.height))
+      ..blendMode = BlendMode.screen;
+
+    canvas.save();
+    canvas.clipRect(Rect.fromCircle(center: center, radius: radius));
+    canvas.drawRect(
+      Rect.fromLTWH(sweepX, 0, sweepWidth * 2, size.height),
+      paint,
+    );
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShimmerSweepPainter old) => old.progress != progress;
 }

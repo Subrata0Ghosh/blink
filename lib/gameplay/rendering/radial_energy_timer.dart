@@ -5,7 +5,7 @@ import '../../core/theme/app_colors.dart';
 /// Animated Radial Energy Timer for the Observe Phase
 /// Displays a glowing circular energy ring that ticks down smoothly,
 /// shifting to an intense pulsating amber/crimson when time is below 25%.
-class RadialEnergyTimer extends StatelessWidget {
+class RadialEnergyTimer extends StatefulWidget {
   final double progress; // 1.0 -> 0.0
   final double timeLeft;
   final double size;
@@ -18,60 +18,111 @@ class RadialEnergyTimer extends StatelessWidget {
   });
 
   @override
+  State<RadialEnergyTimer> createState() => _RadialEnergyTimerState();
+}
+
+class _RadialEnergyTimerState extends State<RadialEnergyTimer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant RadialEnergyTimer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final isLow = widget.progress < 0.25;
+    final wasLow = oldWidget.progress < 0.25;
+    if (isLow && !wasLow) {
+      _pulseController.repeat(reverse: true);
+    } else if (!isLow && wasLow) {
+      _pulseController.stop();
+      _pulseController.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isLow = progress < 0.25;
+    final isLow = widget.progress < 0.25;
     final primaryColor = isLow ? AppColors.error : AppColors.cyan;
     final secondaryColor = isLow ? AppColors.amber : AppColors.primaryLight;
 
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Outer Glow Pulse when time is running low
-          if (isLow)
-            Container(
-              width: size * 0.9,
-              height: size * 0.9,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.error.withValues(alpha: 0.5),
-                    blurRadius: 18,
-                    spreadRadius: 3,
-                  ),
-                ],
-              ),
-            ),
+    // Start pulsing if already low on first build
+    if (isLow && !_pulseController.isAnimating) {
+      _pulseController.repeat(reverse: true);
+    }
 
-          // Custom circular energy arc painter
-          CustomPaint(
-            painter: _RadialTimerPainter(
-              progress: progress.clamp(0.0, 1.0),
-              primaryColor: primaryColor,
-              secondaryColor: secondaryColor,
-            ),
-            size: Size(size, size),
-          ),
-
-          // Center Time Text / Seconds
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                timeLeft > 0 ? timeLeft.toStringAsFixed(1) : '0.0',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: isLow ? AppColors.error : AppColors.textPrimary,
-                  letterSpacing: -0.5,
+    return AnimatedBuilder(
+      animation: _pulseController,
+      builder: (context, child) {
+        final pulseScale = isLow ? 1.0 + _pulseController.value * 0.08 : 1.0;
+        return Transform.scale(
+          scale: pulseScale,
+          child: child,
+        );
+      },
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Outer Glow Pulse when time is running low
+            if (isLow)
+              Container(
+                width: widget.size * 0.9,
+                height: widget.size * 0.9,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.error.withValues(alpha: 0.5),
+                      blurRadius: 18,
+                      spreadRadius: 3,
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ],
+
+            // Custom circular energy arc painter
+            CustomPaint(
+              painter: _RadialTimerPainter(
+                progress: widget.progress.clamp(0.0, 1.0),
+                primaryColor: primaryColor,
+                secondaryColor: secondaryColor,
+              ),
+              size: Size(widget.size, widget.size),
+            ),
+
+            // Center Time Text / Seconds
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  widget.timeLeft > 0 ? widget.timeLeft.toStringAsFixed(1) : '0.0',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: isLow ? AppColors.error : AppColors.textPrimary,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

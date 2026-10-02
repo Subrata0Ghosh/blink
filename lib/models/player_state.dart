@@ -12,6 +12,7 @@ class PlayerState extends Equatable {
   final int bestCombo;
   final int currentStreak; // daily streak
   final int bestStreak;
+  final int bestScore; // all-time high score in a single session
   final int bestReactionTimeMs;
   final DateTime? lastPlayedDate;
   final bool onboardingComplete;
@@ -47,6 +48,7 @@ class PlayerState extends Equatable {
     this.totalChallenges = 0,
     this.correctAnswers = 0,
     this.bestCombo = 0,
+    this.bestScore = 0,
     this.currentStreak = 0,
     this.bestStreak = 0,
     this.bestReactionTimeMs = 0,
@@ -98,6 +100,7 @@ class PlayerState extends Equatable {
     int? totalChallenges,
     int? correctAnswers,
     int? bestCombo,
+    int? bestScore,
     int? currentStreak,
     int? bestStreak,
     int? bestReactionTimeMs,
@@ -135,6 +138,7 @@ class PlayerState extends Equatable {
       totalChallenges: totalChallenges ?? this.totalChallenges,
       correctAnswers: correctAnswers ?? this.correctAnswers,
       bestCombo: bestCombo ?? this.bestCombo,
+      bestScore: bestScore ?? this.bestScore,
       currentStreak: currentStreak ?? this.currentStreak,
       bestStreak: bestStreak ?? this.bestStreak,
       bestReactionTimeMs: bestReactionTimeMs ?? this.bestReactionTimeMs,
@@ -168,10 +172,18 @@ class PlayerState extends Equatable {
   /// XP needed for a given level
   static int xpForLevel(int level) => 80 + (level * 20);
 
+  /// Daily streak XP & gem multiplier
+  double get streakMultiplier {
+    if (currentStreak >= 7) return 2.0;
+    if (currentStreak >= 3) return 1.5;
+    if (currentStreak >= 1) return 1.2;
+    return 1.0;
+  }
+
   @override
   List<Object?> get props => [
         displayName, level, xp, xpToNextLevel, gems, totalChallenges,
-        correctAnswers, bestCombo, currentStreak, bestStreak,
+        correctAnswers, bestCombo, bestScore, currentStreak, bestStreak,
         bestReactionTimeMs, lastPlayedDate, onboardingComplete,
         soundEnabled, musicEnabled, sfxEnabled, hapticEnabled, musicVolume,
         sfxVolume, worldLevel, observerId, selectedAvatarId, selectedFrameId,

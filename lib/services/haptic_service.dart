@@ -25,6 +25,12 @@ class HapticService {
     }
   }
 
+  static Future<void> heavyTap() async {
+    if (await _hasVibrator()) {
+      Vibration.vibrate(duration: 40, amplitude: 120);
+    }
+  }
+
   static Future<void> correctAnswer() async {
     if (await _hasVibrator()) {
       Vibration.vibrate(duration: 30, amplitude: 100);

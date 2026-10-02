@@ -281,9 +281,10 @@ class TactileButton extends StatefulWidget {
   State<TactileButton> createState() => _TactileButtonState();
 }
 
-class _TactileButtonState extends State<TactileButton> with SingleTickerProviderStateMixin {
+class _TactileButtonState extends State<TactileButton> with TickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _pressOffsetAnim;
+  late AnimationController _glowController;
 
   @override
   void initState() {
@@ -295,11 +296,17 @@ class _TactileButtonState extends State<TactileButton> with SingleTickerProvider
     _pressOffsetAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutQuad),
     );
+    // Subtle idle glow pulse
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2400),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -329,12 +336,13 @@ class _TactileButtonState extends State<TactileButton> with SingleTickerProvider
       onTapCancel: _handleTapCancel,
       behavior: HitTestBehavior.opaque,
       child: AnimatedBuilder(
-        animation: _pressOffsetAnim,
+        animation: Listenable.merge([_pressOffsetAnim, _glowController]),
         builder: (context, child) {
           final t = _pressOffsetAnim.value;
           final pushDown = t * (widget.rimHeight - 1);
           final shadowBlur = (6.0 - (t * 3.0)).clamp(1.0, 10.0);
           final shadowOffset = (4.0 - (t * 2.5)).clamp(0.5, 6.0);
+          final glowAlpha = 0.08 + _glowController.value * 0.12;
 
           return SizedBox(
             width: effectiveWidth,
@@ -342,6 +350,25 @@ class _TactileButtonState extends State<TactileButton> with SingleTickerProvider
             child: Stack(
               clipBehavior: Clip.none,
               children: [
+                // ──── 0. IDLE GLOW PULSE (behind everything) ────
+                Positioned(
+                  top: widget.rimHeight - 2,
+                  left: -3,
+                  right: -3,
+                  height: widget.height + 4,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(widget.borderRadius + 3),
+                      boxShadow: [
+                        BoxShadow(
+                          color: widget.faceColorTop.withValues(alpha: glowAlpha),
+                          blurRadius: 12 + _glowController.value * 6,
+                          spreadRadius: _glowController.value * 2,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 // ──── 1. BOTTOM 3D RIM (Extruded Base) ────
                 Positioned(
                   top: widget.rimHeight,
