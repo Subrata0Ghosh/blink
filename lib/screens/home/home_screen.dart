@@ -139,42 +139,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                // Lives Heart Pill
-                                _buildGlassPill(
-                                  icon: Icons.favorite_rounded,
-                                  iconColor: const Color(0xFFFF5580),
-                                  label: 'Infinite',
-                                  glowColor: const Color(0xFFFF5580),
-                                  onTap: () {
-                                    triggerHaptic(ref, HapticService.lightTap);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Row(
-                                          children: [
-                                            const Icon(Icons.favorite_rounded, color: Color(0xFFFF5277), size: 20),
-                                            const SizedBox(width: 10),
-                                            Expanded(
-                                              child: Text(
-                                                'Cosmic Energy is Infinite! No lives lost.',
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        backgroundColor: const Color(0xFF1B233A),
-                                        behavior: SnackBarBehavior.floating,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
-                                          side: const BorderSide(color: Color(0xFFFF5277), width: 1.2),
-                                        ),
-                                        duration: const Duration(seconds: 2),
-                                      ),
-                                    );
-                                  },
+                                // 3D Tactile Daily Streak Flame Pill (matches CandyTopBar)
+                                _buildStreakPill(
+                                  streakDays: player.currentStreak,
+                                  hasReward: hasReward,
+                                  onTap: _openDailyRewards,
                                 ),
 
                                 // Top Right Actions: Share, Rate, Gift, Gems
@@ -629,6 +598,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStreakPill({
+    required int streakDays,
+    required bool hasReward,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.glassWhite,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: hasReward ? const Color(0xFFFF9100).withValues(alpha: 0.6) : AppColors.glassBorder,
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF6D00).withValues(alpha: hasReward ? 0.35 : 0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 3D Fiery Flame Circle
+            Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF9100), Color(0xFFFF3D00)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF6D00).withValues(alpha: 0.6),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Icon(
+                  Icons.local_fire_department_rounded,
+                  color: Colors.white,
+                  size: 15,
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              '${streakDays}d',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

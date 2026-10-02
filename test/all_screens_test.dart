@@ -16,11 +16,13 @@ import 'package:blink/widgets/sliders/tactile_jelly_switch.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:blink/services/game_state_service.dart';
 
+import 'package:blink/widgets/modals/daily_rewards_modal.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('All Navigation & Game Screens Test Suite', () {
-    testWidgets('HomeScreen renders with Play button, Level Map, and Title', (tester) async {
+    testWidgets('HomeScreen renders with Play button, Level Map, and Streak Flame Pill', (tester) async {
       await tester.pumpWidget(
         const ProviderScope(
           child: MaterialApp(
@@ -34,7 +36,14 @@ void main() {
       expect(find.text('LEVEL MAP'), findsOneWidget);
       expect(find.text('BLINK'), findsOneWidget);
 
-      await tester.pump(const Duration(milliseconds: 100));
+      // Verify 3D Streak Flame Pill replaced the old Infinite heart pill
+      expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
+      expect(find.text('0d'), findsOneWidget);
+
+      // Tap streak flame pill opens DailyRewardsModal
+      await tester.tap(find.byIcon(Icons.local_fire_department_rounded));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(DailyRewardsModal), findsOneWidget);
     });
 
     testWidgets('WorldScreen mounts with CandyTopBar, Level Road, and GameBottomNav', (tester) async {
