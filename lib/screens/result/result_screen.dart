@@ -334,24 +334,27 @@ class _ResultScreenState extends ConsumerState<ResultScreen> with TickerProvider
                                         ),
                                         const SizedBox(height: 8),
                                       ],
-                                      Text(
-                                        _titleText,
-                                        style: GoogleFonts.outfit(
-                                          fontSize: 44,
-                                          fontWeight: FontWeight.w900,
-                                          color: _titleColor,
-                                          letterSpacing: 5,
-                                          shadows: [
-                                            Shadow(
-                                              color: _titleColor.withValues(alpha: 0.6),
-                                              blurRadius: 30,
-                                            ),
-                                            Shadow(
-                                              color: _titleColor.withValues(alpha: 0.3),
-                                              blurRadius: 60,
-                                              offset: const Offset(0, 4),
-                                            ),
-                                          ],
+                                      FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          _titleText,
+                                          style: GoogleFonts.outfit(
+                                            fontSize: 44,
+                                            fontWeight: FontWeight.w900,
+                                            color: _titleColor,
+                                            letterSpacing: 5,
+                                            shadows: [
+                                              Shadow(
+                                                color: _titleColor.withValues(alpha: 0.6),
+                                                blurRadius: 30,
+                                              ),
+                                              Shadow(
+                                                color: _titleColor.withValues(alpha: 0.3),
+                                                blurRadius: 60,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ],

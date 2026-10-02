@@ -10,6 +10,7 @@ import 'package:blink/screens/daily/daily_shift_screen.dart';
 import 'package:blink/screens/mystery/mystery_screen.dart';
 import 'package:blink/screens/result/result_screen.dart';
 import 'package:blink/screens/onboarding/onboarding_screen.dart';
+import 'package:blink/screens/play/play_screen.dart';
 import 'package:blink/widgets/navigation/game_bottom_nav.dart';
 import 'package:blink/widgets/sliders/tactile_jelly_switch.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -212,6 +213,37 @@ void main() {
       expect(find.text('What\'s your name?'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('START JOURNEY'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('PlayScreen top bar fits narrow 320px screen without any RenderFlex overflow', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+          ],
+          child: MaterialApp(
+            home: MediaQuery(
+              data: const MediaQueryData(
+                size: Size(320, 600),
+              ),
+              child: const PlayScreen(),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(PlayScreen), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Pump through intro timers and countdown to settle all timers
+      await tester.pump(const Duration(milliseconds: 900));
+      for (int i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 700));
+      }
       expect(tester.takeException(), isNull);
     });
   });

@@ -234,35 +234,41 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
                     child: Row(
                       children: [
                         TactileButton.close(
-                          size: 42,
+                          size: 38,
                           onTap: _handleClose,
                         ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppColors.cyan.withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4)),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.today_rounded, color: AppColors.cyan, size: 16),
-                              const SizedBox(width: 6),
-                              Text(
-                                'DAILY SHIFT • 2X REWARDS',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.cyan,
-                                  letterSpacing: 1.2,
+                        Expanded(
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.cyan.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4)),
+                              ),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.today_rounded, color: AppColors.cyan, size: 16),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      'DAILY SHIFT • 2X REWARDS',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: AppColors.cyan,
+                                        letterSpacing: 1.2,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
-                        const Spacer(),
-                        const SizedBox(width: 40),
+                        const SizedBox(width: 38),
                       ],
                     ),
                   ),
@@ -273,12 +279,16 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(
-                          _isObserving ? 'OBSERVE THE COSMOS' : 'REALITY SHIFTED • WHAT CHANGED?',
-                          style: GoogleFonts.outfit(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: _isObserving ? AppColors.cyan : AppColors.gold,
+                        Expanded(
+                          child: Text(
+                            _isObserving ? 'OBSERVE THE COSMOS' : 'REALITY SHIFTED • WHAT CHANGED?',
+                            style: GoogleFonts.outfit(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _isObserving ? AppColors.cyan : AppColors.gold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (_isObserving)

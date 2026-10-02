@@ -199,41 +199,47 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                   child: Row(
                     children: [
                       TactileButton.close(
-                        size: 42,
+                        size: 38,
                         onTap: _handleClose,
                       ),
-                      const Spacer(),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: AppColors.gemPurple.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.gemPurple.withValues(alpha: 0.5)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.gemPurple.withValues(alpha: 0.25),
-                              blurRadius: 12,
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.gemPurple.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.gemPurple.withValues(alpha: 0.5)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.gemPurple.withValues(alpha: 0.25),
+                                  blurRadius: 12,
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.help_outline_rounded, color: AppColors.gemPurple, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              'MYSTERY SHIFT • HIDDEN RULE',
-                              style: GoogleFonts.outfit(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFFD68BFF),
-                                letterSpacing: 1.2,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.help_outline_rounded, color: AppColors.gemPurple, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'MYSTERY SHIFT • HIDDEN RULE',
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: const Color(0xFFD68BFF),
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                      const Spacer(),
-                      const SizedBox(width: 40),
+                      const SizedBox(width: 38),
                     ],
                   ),
                 ),
@@ -244,12 +250,16 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        _isObserving ? 'DECIPHER THE PHENOMENON' : 'WHAT IS THE HIDDEN LAW?',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: _isObserving ? const Color(0xFFD68BFF) : AppColors.gold,
+                      Expanded(
+                        child: Text(
+                          _isObserving ? 'DECIPHER THE PHENOMENON' : 'WHAT IS THE HIDDEN LAW?',
+                          style: GoogleFonts.outfit(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: _isObserving ? const Color(0xFFD68BFF) : AppColors.gold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (_isObserving)

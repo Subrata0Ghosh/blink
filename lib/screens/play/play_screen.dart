@@ -745,7 +745,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
         children: [
           // Close Button
           TactileButton.close(
-            size: 40,
+            size: 38,
             onTap: () {
               if (context.canPop()) {
                 context.pop();
@@ -755,96 +755,102 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
             },
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
 
-          // Round Indicator
-          GestureDetector(
-            onTap: _handleRoundTapForDebug,
-            behavior: HitTestBehavior.opaque,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _isBonusRound
-                          ? '⚡ BONUS ROUND $_round / 5'
-                          : (_showDebug ? 'DEBUG ROUND $_round / 5' : 'ROUND $_round / 5'),
-                      style: GoogleFonts.outfit(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: _isBonusRound ? AppColors.gold : AppColors.textPrimary,
-                        letterSpacing: 1.0,
-                      ),
-                    ),
-                    if (_isBonusRound)
-                      Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: AppColors.gold.withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.gold, width: 1),
+          // Round Indicator (Flexible & Auto-scaling to prevent ANY overflow)
+          Expanded(
+            child: GestureDetector(
+              onTap: _handleRoundTapForDebug,
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _isBonusRound
+                              ? '⚡ BONUS $_round/5'
+                              : (_showDebug ? 'DEBUG $_round/5' : 'ROUND $_round/5'),
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: _isBonusRound ? AppColors.gold : AppColors.textPrimary,
+                            letterSpacing: 0.5,
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('💎', style: TextStyle(fontSize: 10)),
-                            const SizedBox(width: 3),
-                            Text(
-                              '2x GEMS',
-                              style: GoogleFonts.outfit(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.gold,
-                              ),
+                        if (_isBonusRound)
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.gold, width: 1),
                             ),
-                          ],
-                        ),
-                      ),
-                    if (ref.watch(gameStateProvider).isCalmMode)
-                      Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0077B6).withValues(alpha: 0.35),
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFF00B4D8), width: 1),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.spa_rounded, color: Color(0xFF90E0EF), size: 11),
-                            const SizedBox(width: 3),
-                            Text(
-                              'ZEN',
-                              style: GoogleFonts.outfit(
-                                fontSize: 9.5,
-                                fontWeight: FontWeight.w800,
-                                color: const Color(0xFF90E0EF),
-                              ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Text('💎', style: TextStyle(fontSize: 10)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  '2x GEMS',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    color: AppColors.gold,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-                if (_combo > 1)
-                  Text(
-                    'Combo x$_combo 🔥',
-                    style: GoogleFonts.outfit(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.gold,
+                          ),
+                        if (ref.watch(gameStateProvider).isCalmMode)
+                          Container(
+                            margin: const EdgeInsets.only(left: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0077B6).withValues(alpha: 0.35),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFF00B4D8), width: 1),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.spa_rounded, color: Color(0xFF90E0EF), size: 10),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'ZEN',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w800,
+                                    color: const Color(0xFF90E0EF),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-              ],
+                  if (_combo > 1)
+                    Text(
+                      'Combo x$_combo 🔥',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.gold,
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
 
-          const Spacer(),
+          const SizedBox(width: 6),
 
           // Star progress meter (3 stars)
           Row(
@@ -852,11 +858,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
             children: List.generate(3, (i) {
               final earned = i < (_round > 1 ? min(3, (_correctCount * 3 / 5).ceil()) : 0);
               return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 1),
                 child: Icon(
                   earned ? Icons.star_rounded : Icons.star_border_rounded,
                   color: earned ? AppColors.gold : AppColors.textMuted.withValues(alpha: 0.5),
-                  size: 24,
+                  size: 20,
                   shadows: earned
                       ? [
                           BoxShadow(
@@ -870,27 +876,27 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
             }),
           ),
 
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
 
           // Companion Nova avatar (Transparent, reactive on tap)
           GestureDetector(
             onTap: () => HapticFeedback.lightImpact(),
             child: SizedBox(
-              width: 38,
-              height: 38,
+              width: 34,
+              height: 34,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 26,
+                    height: 26,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.cyan.withValues(alpha: 0.5),
-                          blurRadius: 10,
-                          spreadRadius: 2,
+                          blurRadius: 8,
+                          spreadRadius: 1,
                         ),
                       ],
                     ),
@@ -901,7 +907,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                     errorBuilder: (_, _, _) => const Icon(
                       Icons.visibility_rounded,
                       color: AppColors.cyan,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
                 ],
@@ -1181,86 +1187,105 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
           child: child,
         );
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: Column(
-          children: [
-            // Timer Bar in Cosmic Glass Capsule
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                height: 10,
-                decoration: BoxDecoration(
-                  color: AppColors.surface.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
-                ),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  backgroundColor: Colors.transparent,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    isLow ? AppColors.dangerRed : AppColors.cosmicCyan,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompactHeight = constraints.maxHeight < 560;
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight - 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Timer Bar in Cosmic Glass Capsule
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          height: 10,
+                          decoration: BoxDecoration(
+                            color: AppColors.surface.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.15), width: 1),
+                          ),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            backgroundColor: Colors.transparent,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              isLow ? AppColors.dangerRed : AppColors.cosmicCyan,
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: isCompactHeight ? 12 : 18),
 
-            // Question Box in Cosmic Glass Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 16),
-              decoration: BoxDecoration(
-                color: AppColors.surface.withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: AppColors.cyan.withValues(alpha: 0.35), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.cyan.withValues(alpha: 0.12),
-                    blurRadius: 16,
-                    spreadRadius: 1,
+                      // Question Box in Cosmic Glass Card
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: isCompactHeight ? 12 : 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: AppColors.cyan.withValues(alpha: 0.35), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.cyan.withValues(alpha: 0.12),
+                              blurRadius: 16,
+                              spreadRadius: 1,
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.4),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          _challenge!.question,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.outfit(
+                            fontSize: isCompactHeight ? 18 : 21,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                            height: 1.25,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+
+                  const SizedBox(height: 12),
+
+                  // Tactile 3D Candy Answer Buttons
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _challenge!.answers.asMap().entries.map((entry) {
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: isCompactHeight ? 8 : 12),
+                        child: TactileOptionButton(
+                          index: entry.key,
+                          text: entry.value,
+                          isSelected: _selectedAnswer == entry.key,
+                          isCorrect: entry.key == _challenge!.correctAnswerIndex,
+                          showResult: _selectedAnswer != null,
+                          height: isCompactHeight ? 48 : 54,
+                          onTap: () => _onAnswerSelected(entry.key),
+                        ),
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
-              child: Text(
-                _challenge!.question,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.outfit(
-                  fontSize: 21,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 0.3,
-                  height: 1.25,
-                ),
-              ),
             ),
-
-            const Spacer(),
-
-            // Tactile 3D Candy Answer Buttons (matching Image 2)
-            ..._challenge!.answers.asMap().entries.map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TactileOptionButton(
-                  index: entry.key,
-                  text: entry.value,
-                  isSelected: _selectedAnswer == entry.key,
-                  isCorrect: entry.key == _challenge!.correctAnswerIndex,
-                  showResult: _selectedAnswer != null,
-                  height: 54,
-                  onTap: () => _onAnswerSelected(entry.key),
-                ),
-              );
-            }),
-
-            const Spacer(),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
