@@ -100,6 +100,9 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
         currentCombo: 2,
         challengeType: 'mystery_mode',
       );
+      // Unlock exclusive Shadow Pyramid vault collectible
+      ref.read(gameStateProvider.notifier).unlockCollectible('shadow_pyramid', 0);
+      ref.read(gameStateProvider.notifier).addGems(30);
 
       _victoryTimer = Timer(const Duration(milliseconds: 700), () {
         if (mounted) {
@@ -374,7 +377,7 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '+40 XP • +30 SHIFT GEMS • RARE DISCOVERY',
+                        '+40 XP • +30 GEMS • UNLOCKED SHADOW PYRAMID!',
                         style: GoogleFonts.outfit(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,

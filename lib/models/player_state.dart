@@ -38,6 +38,13 @@ class PlayerState extends Equatable {
   final int todayShiftsPlayed;
   final int todayBestCombo;
   final bool isCalmMode;
+  final List<String> unlockedCollectibleIds;
+  final String equippedCollectibleId;
+  final int unlockedWorldLevel;
+  final Map<int, int> levelStars;
+  final DateTime? lastDailyShiftCompletedDate;
+
+  factory PlayerState.initial() => const PlayerState();
 
   const PlayerState({
     this.displayName = 'Observer',
@@ -76,6 +83,11 @@ class PlayerState extends Equatable {
     this.todayShiftsPlayed = 0,
     this.todayBestCombo = 0,
     this.isCalmMode = false,
+    this.unlockedCollectibleIds = const ['shift_gem'],
+    this.equippedCollectibleId = 'shift_gem',
+    this.unlockedWorldLevel = 1,
+    this.levelStars = const {},
+    this.lastDailyShiftCompletedDate,
   });
 
   /// Check if the 7-day reward is claimable today
@@ -89,6 +101,15 @@ class PlayerState extends Equatable {
       lastDailyRewardDate!.day,
     );
     return today.isAfter(last);
+  }
+
+  /// Check if today's Daily Shift has been completed
+  bool get isDailyShiftCompletedToday {
+    if (lastDailyShiftCompletedDate == null) return false;
+    final now = DateTime.now();
+    return now.year == lastDailyShiftCompletedDate!.year &&
+        now.month == lastDailyShiftCompletedDate!.month &&
+        now.day == lastDailyShiftCompletedDate!.day;
   }
 
   PlayerState copyWith({
@@ -128,6 +149,11 @@ class PlayerState extends Equatable {
     int? todayShiftsPlayed,
     int? todayBestCombo,
     bool? isCalmMode,
+    List<String>? unlockedCollectibleIds,
+    String? equippedCollectibleId,
+    int? unlockedWorldLevel,
+    Map<int, int>? levelStars,
+    DateTime? lastDailyShiftCompletedDate,
   }) {
     return PlayerState(
       displayName: displayName ?? this.displayName,
@@ -166,6 +192,11 @@ class PlayerState extends Equatable {
       todayShiftsPlayed: todayShiftsPlayed ?? this.todayShiftsPlayed,
       todayBestCombo: todayBestCombo ?? this.todayBestCombo,
       isCalmMode: isCalmMode ?? this.isCalmMode,
+      unlockedCollectibleIds: unlockedCollectibleIds ?? this.unlockedCollectibleIds,
+      equippedCollectibleId: equippedCollectibleId ?? this.equippedCollectibleId,
+      unlockedWorldLevel: unlockedWorldLevel ?? this.unlockedWorldLevel,
+      levelStars: levelStars ?? this.levelStars,
+      lastDailyShiftCompletedDate: lastDailyShiftCompletedDate ?? this.lastDailyShiftCompletedDate,
     );
   }
 
@@ -190,6 +221,8 @@ class PlayerState extends Equatable {
         country, voiceEnabled, monoAudio, audioBalance, bassWarmth, sparkleSoftness,
         lastDailyRewardDate, dailyRewardDay, dailyQuestsClaimed,
         todayShiftsPlayed, todayBestCombo, isCalmMode,
+        unlockedCollectibleIds, equippedCollectibleId, unlockedWorldLevel,
+        levelStars, lastDailyShiftCompletedDate,
       ];
 }
 

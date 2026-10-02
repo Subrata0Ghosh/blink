@@ -83,6 +83,31 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     final todayBestCombo = isNewDay ? 0 : (prefs.getInt('todayBestCombo') ?? 0);
     final dailyQuestsClaimed = isNewDay ? <String>[] : (prefs.getStringList('dailyQuestsClaimed') ?? <String>[]);
 
+    final lastDailyShiftStr = prefs.getString('lastDailyShiftCompletedDate');
+    DateTime? lastDailyShiftDate;
+    if (lastDailyShiftStr != null) {
+      lastDailyShiftDate = DateTime.tryParse(lastDailyShiftStr);
+    }
+
+    final unlockedCollectibles = prefs.getStringList('unlockedCollectibleIds') ?? <String>['shift_gem'];
+    final equippedCollectible = prefs.getString('equippedCollectibleId') ?? 'shift_gem';
+    final unlockedWorldLevel = prefs.getInt('unlockedWorldLevel') ?? 1;
+
+    final levelStars = <int, int>{};
+    final levelStarsStr = prefs.getString('levelStars');
+    if (levelStarsStr != null && levelStarsStr.isNotEmpty) {
+      for (final part in levelStarsStr.split(',')) {
+        final kv = part.split(':');
+        if (kv.length == 2) {
+          final k = int.tryParse(kv[0]);
+          final v = int.tryParse(kv[1]);
+          if (k != null && v != null) {
+            levelStars[k] = v;
+          }
+        }
+      }
+    }
+
     return PlayerState(
       displayName: prefs.getString('displayName') ?? 'Observer',
       level: prefs.getInt('level') ?? 1,
@@ -120,6 +145,11 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       todayShiftsPlayed: todayShiftsPlayed,
       todayBestCombo: todayBestCombo,
       isCalmMode: prefs.getBool('isCalmMode') ?? false,
+      unlockedCollectibleIds: unlockedCollectibles,
+      equippedCollectibleId: equippedCollectible,
+      unlockedWorldLevel: unlockedWorldLevel,
+      levelStars: levelStars,
+      lastDailyShiftCompletedDate: lastDailyShiftDate,
     );
   }
 
@@ -155,6 +185,7 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
         _hasPendingSave = false;
         final currentState = state;
         final prefs = _prefs ?? await SharedPreferences.getInstance();
+        final levelStarsEncoded = currentState.levelStars.entries.map((e) => '${e.key}:${e.value}').join(',');
         await Future.wait([
           prefs.setString('displayName', currentState.displayName),
           prefs.setInt('level', currentState.level),
@@ -194,6 +225,12 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
           prefs.setInt('todayShiftsPlayed', currentState.todayShiftsPlayed),
           prefs.setInt('todayBestCombo', currentState.todayBestCombo),
           prefs.setBool('isCalmMode', currentState.isCalmMode),
+          prefs.setStringList('unlockedCollectibleIds', currentState.unlockedCollectibleIds),
+          prefs.setString('equippedCollectibleId', currentState.equippedCollectibleId),
+          prefs.setInt('unlockedWorldLevel', currentState.unlockedWorldLevel),
+          prefs.setString('levelStars', levelStarsEncoded),
+          if (currentState.lastDailyShiftCompletedDate != null)
+            prefs.setString('lastDailyShiftCompletedDate', currentState.lastDailyShiftCompletedDate!.toIso8601String()),
         ]);
       } while (_hasPendingSave);
     } catch (e, st) {
@@ -211,7 +248,7 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     await _saveState();
   }
 
-  /// Process a challenge result — update XP, gems, streak, level
+  /// Process a challenge result — update XP, gems, streak, level with relic perks
   ChallengeResult processChallengeResult({
     required bool correct,
     required int reactionTimeMs,
@@ -241,6 +278,16 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       } else if (currentCombo >= 3) {
         xpEarned += 5;
         gemsEarned += 3;
+      }
+
+      // ── Relic Perk: Starlight Prism (Level 3+) gives +50% bonus Gems on combos ──
+      if (state.level >= 3 && currentCombo >= 2) {
+        gemsEarned = (gemsEarned * 1.5).round();
+      }
+
+      // ── Relic Perk: Eye of Chronos (Level 5+) doubles all earned XP (+100% XP) ──
+      if (state.level >= 5) {
+        xpEarned *= 2;
       }
 
       // Streak reward multiplier
@@ -306,6 +353,86 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     state = state.copyWith(gems: state.gems + amount);
     await _saveState();
   }
+
+  void addXp(int amount) {
+    if (amount <= 0) return;
+    int newXp = state.xp + amount;
+    int newLevel = state.level;
+    int newXpToNext = state.xpToNextLevel;
+    int newWorldLevel = state.worldLevel;
+
+    while (newXp >= newXpToNext) {
+      newXp -= newXpToNext;
+      newLevel++;
+      newXpToNext = PlayerState.xpForLevel(newLevel);
+      if (newLevel % 5 == 0) {
+        newWorldLevel++;
+      }
+    }
+
+    state = state.copyWith(
+      xp: newXp,
+      level: newLevel,
+      xpToNextLevel: newXpToNext,
+      worldLevel: newWorldLevel,
+    );
+    _saveState();
+  }
+
+  /// Unlock a collectible item by spending gems (or 0 for free/milestone unlock)
+  Future<bool> unlockCollectible(String id, int costInGems) async {
+    if (state.gems < costInGems) return false;
+    final updatedUnlocked = List<String>.from(state.unlockedCollectibleIds);
+    if (!updatedUnlocked.contains(id)) {
+      updatedUnlocked.add(id);
+    }
+    state = state.copyWith(
+      gems: state.gems - costInGems,
+      unlockedCollectibleIds: updatedUnlocked,
+      equippedCollectibleId: id,
+    );
+    await _saveState();
+    return true;
+  }
+
+  /// Equip an unlocked collectible object into active arena gameplay
+  Future<bool> equipCollectible(String id) async {
+    if (!state.unlockedCollectibleIds.contains(id)) return false;
+    state = state.copyWith(equippedCollectibleId: id);
+    await _saveState();
+    return true;
+  }
+
+  /// Complete a World Map level, record earned stars (1-3), and unlock next node
+  Future<void> completeWorldLevel(int levelNum, int stars) async {
+    final updatedStars = Map<int, int>.from(state.levelStars);
+    final currentBest = updatedStars[levelNum] ?? 0;
+    if (stars > currentBest) {
+      updatedStars[levelNum] = stars;
+    }
+    int newUnlockedWorldLevel = state.unlockedWorldLevel;
+    int gemBonus = 0;
+    if (stars >= 1 && levelNum >= state.unlockedWorldLevel && state.unlockedWorldLevel < 20) {
+      newUnlockedWorldLevel = levelNum + 1;
+      gemBonus = stars * 10;
+    }
+    state = state.copyWith(
+      unlockedWorldLevel: newUnlockedWorldLevel,
+      levelStars: updatedStars,
+      worldLevel: (newUnlockedWorldLevel - 1) ~/ 4 + 1,
+      gems: state.gems + gemBonus,
+    );
+    await _saveState();
+  }
+
+  /// Mark today's Daily Shift challenge completed
+  Future<void> completeDailyShift() async {
+    state = state.copyWith(
+      lastDailyShiftCompletedDate: DateTime.now(),
+    );
+    await _saveState();
+  }
+
 
   /// Update best score and return true if this is a new personal record
   bool updateBestScore(int score) {

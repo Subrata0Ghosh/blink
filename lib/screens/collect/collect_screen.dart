@@ -43,6 +43,9 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
       color: AppColors.cyan,
       rarity: 'COMMON',
       description: 'The primary mineral of the Shift Universe. Refracts dimensional light when reality blinks.',
+      costInGems: 0,
+      unlockLevel: 1,
+      unlockRequirement: 'Starter Cosmic Mineral',
     ),
     _CollectibleItem(
       id: 'cosmic_star',
@@ -51,6 +54,9 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
       color: AppColors.gold,
       rarity: 'COMMON',
       description: 'Five-faceted astral beacon. Radiates celestial warmth and guides wandering observers.',
+      costInGems: 100,
+      unlockLevel: 2,
+      unlockRequirement: 'Reach Observer Level 2 or 100 💎',
     ),
     _CollectibleItem(
       id: 'lunar_crescent',
@@ -59,6 +65,9 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
       color: AppColors.primaryLight,
       rarity: 'RARE',
       description: 'Forged from moonlit crater dust. Its rim glows brighter when observation time diminishes.',
+      costInGems: 250,
+      unlockLevel: 4,
+      unlockRequirement: 'Reach Observer Level 4 or 250 💎',
     ),
     _CollectibleItem(
       id: 'void_orb',
@@ -67,6 +76,9 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
       color: AppColors.gemPurple,
       rarity: 'RARE',
       description: 'A smooth sphere of compressed gravity. Absorbs optical illusions.',
+      costInGems: 350,
+      unlockLevel: 6,
+      unlockRequirement: 'Reach Observer Level 6 or 350 💎',
     ),
     _CollectibleItem(
       id: 'solar_bolt',
@@ -75,6 +87,9 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
       color: AppColors.amber,
       rarity: 'EPIC',
       description: 'Pulsating lightning shard. Grants heightened reaction reflexes during rapid changes.',
+      costInGems: 500,
+      unlockLevel: 8,
+      unlockRequirement: 'Reach Observer Level 8 or 500 💎',
     ),
     _CollectibleItem(
       id: 'prism_cube',
@@ -83,6 +98,9 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
       color: AppColors.mint,
       rarity: 'EPIC',
       description: 'Isometric crystal block. Stores memories of previous realities before they shift.',
+      costInGems: 650,
+      unlockLevel: 10,
+      unlockRequirement: 'Reach Observer Level 10 or 650 💎',
     ),
     _CollectibleItem(
       id: 'chronos_ring',
@@ -91,22 +109,31 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
       color: AppColors.gold,
       rarity: 'LEGENDARY',
       description: 'Continuous temporal torus. Dilates the final seconds of the observation window.',
+      costInGems: 900,
+      unlockLevel: 12,
+      unlockRequirement: 'Reach Observer Level 12 or 900 💎',
     ),
     _CollectibleItem(
       id: 'astral_leaf',
       name: 'Astral Leaf',
       type: GameObjectType.leaf,
-      color: Color(0xFF69F0AE),
+      color: const Color(0xFF69F0AE),
       rarity: 'LEGENDARY',
       description: 'Living foliage from the world tree of the Core Sanctuary. Breathes in harmony with Nova.',
+      costInGems: 1200,
+      unlockLevel: 15,
+      unlockRequirement: 'Reach Observer Level 15 or 1200 💎',
     ),
     _CollectibleItem(
       id: 'shadow_pyramid',
       name: 'Shadow Pyramid',
       type: GameObjectType.triangle,
-      color: Color(0xFFFF6EE6),
+      color: const Color(0xFFFF6EE6),
       rarity: 'MYSTERY',
       description: 'A cryptic three-faced relic discovered inside Mystery Mode. Changes form when looked away from.',
+      costInGems: 1500,
+      unlockLevel: 18,
+      unlockRequirement: 'Complete Mystery Mode or 1500 💎',
     ),
   ];
 
@@ -308,82 +335,160 @@ class _CollectScreenState extends ConsumerState<CollectScreen>
   }
 
   Widget _buildItemCard(_CollectibleItem item, Color rarityColor) {
+    final player = ref.watch(gameStateProvider);
+    final isUnlocked = player.unlockedCollectibleIds.contains(item.id);
+    final isEquipped = player.equippedCollectibleId == item.id;
+
     return GestureDetector(
       onTap: () => _openInspectModal(item),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: isEquipped
+              ? const Color(0xFF132A32)
+              : (isUnlocked ? AppColors.surface : const Color(0xFF0E1322)),
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: rarityColor.withValues(alpha: 0.35), width: 1.2),
+          border: Border.all(
+            color: isEquipped
+                ? const Color(0xFF00E676)
+                : (isUnlocked ? rarityColor.withValues(alpha: 0.6) : const Color(0xFF222B44)),
+            width: isEquipped ? 2.0 : 1.2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: rarityColor.withValues(alpha: 0.12),
+              color: isEquipped
+                  ? const Color(0xFF00E676).withValues(alpha: 0.25)
+                  : (isUnlocked ? rarityColor.withValues(alpha: 0.15) : Colors.transparent),
               blurRadius: 16,
               spreadRadius: -2,
             ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            // 2.5D Animated Object Preview
-            AnimatedBuilder(
-              animation: _rotationController,
-              builder: (context, _) {
-                final t = _rotationController.value;
-                final floatY = sin(t * 2 * pi) * 4.0;
-                final tiltY = cos(t * 2 * pi) * 0.12;
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // 2.5D Animated Object Preview
+                AnimatedBuilder(
+                  animation: _rotationController,
+                  builder: (context, _) {
+                    final t = _rotationController.value;
+                    final floatY = sin(t * 2 * pi) * 4.0;
+                    final tiltY = cos(t * 2 * pi) * 0.12;
 
-                return Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity()
-                    ..setEntry(3, 2, 0.002)
-                    ..rotateY(tiltY),
-                  child: Transform.translate(
-                    offset: Offset(0, floatY),
-                    child: SizedBox(
-                      width: 68,
-                      height: 68,
-                      child: CustomPaint(
-                        painter: _getItemPainter(item, t),
+                    return Opacity(
+                      opacity: isUnlocked ? 1.0 : 0.45,
+                      child: Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity()
+                          ..setEntry(3, 2, 0.002)
+                          ..rotateY(tiltY),
+                        child: Transform.translate(
+                          offset: Offset(0, floatY),
+                          child: SizedBox(
+                            width: 68,
+                            height: 68,
+                            child: CustomPaint(
+                              painter: _getItemPainter(item, t),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 10),
+
+                // Item Name
+                Text(
+                  item.name,
+                  style: GoogleFonts.outfit(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: isUnlocked ? AppColors.textPrimary : const Color(0xFF7A86A8),
+                  ),
+                ),
+                const SizedBox(height: 4),
+
+                // Rarity Tag or Status
+                if (isEquipped)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00E676).withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF00E676), width: 1.2),
+                    ),
+                    child: Text(
+                      'EQUIPPED',
+                      style: GoogleFonts.outfit(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w900,
+                        color: const Color(0xFF00E676),
+                        letterSpacing: 1.0,
                       ),
                     ),
+                  )
+                else if (isUnlocked)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: rarityColor.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: rarityColor.withValues(alpha: 0.4)),
+                    ),
+                    child: Text(
+                      item.rarity,
+                      style: GoogleFonts.outfit(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                        color: rarityColor,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF141A2E),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF2C395B)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.lock_rounded, size: 10, color: Color(0xFFFFD700)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${item.costInGems} 💎',
+                          style: GoogleFonts.outfit(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFFFFD700),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              },
+              ],
             ),
-
-            const SizedBox(height: 12),
-
-            // Item Name
-            Text(
-              item.name,
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-
-            // Rarity Tag
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: rarityColor.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: rarityColor.withValues(alpha: 0.4)),
-              ),
-              child: Text(
-                item.rarity,
-                style: GoogleFonts.outfit(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  color: rarityColor,
-                  letterSpacing: 1.0,
+            if (isEquipped)
+              Positioned(
+                top: 8,
+                right: 8,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF00E676),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_rounded, color: Colors.black, size: 14),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -411,6 +516,9 @@ class _CollectibleItem {
   final Color color;
   final String rarity;
   final String description;
+  final int costInGems;
+  final int unlockLevel;
+  final String unlockRequirement;
 
   _CollectibleItem({
     required this.id,
@@ -419,11 +527,14 @@ class _CollectibleItem {
     required this.color,
     required this.rarity,
     required this.description,
+    required this.costInGems,
+    required this.unlockLevel,
+    required this.unlockRequirement,
   });
 }
 
-/// 3D Inspection Modal with Interactive Tumble Physics
-class _Inspect3dModal extends StatefulWidget {
+/// 3D Inspection Modal with Interactive Tumble Physics, Real Unlocking, and Arena Equipping
+class _Inspect3dModal extends ConsumerStatefulWidget {
   final _CollectibleItem item;
   final Color rarityColor;
 
@@ -433,10 +544,10 @@ class _Inspect3dModal extends StatefulWidget {
   });
 
   @override
-  State<_Inspect3dModal> createState() => _Inspect3dModalState();
+  ConsumerState<_Inspect3dModal> createState() => _Inspect3dModalState();
 }
 
-class _Inspect3dModalState extends State<_Inspect3dModal>
+class _Inspect3dModalState extends ConsumerState<_Inspect3dModal>
     with SingleTickerProviderStateMixin {
   late AnimationController _animController;
   double _rotX = 0.0;
@@ -460,8 +571,14 @@ class _Inspect3dModalState extends State<_Inspect3dModal>
 
   @override
   Widget build(BuildContext context) {
+    final player = ref.watch(gameStateProvider);
+    final notifier = ref.read(gameStateProvider.notifier);
+    final isUnlocked = player.unlockedCollectibleIds.contains(widget.item.id);
+    final isEquipped = player.equippedCollectibleId == widget.item.id;
+    final canAfford = player.gems >= widget.item.costInGems;
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.65,
+      height: MediaQuery.of(context).size.height * 0.70,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: AppColors.surface,
@@ -516,7 +633,7 @@ class _Inspect3dModalState extends State<_Inspect3dModal>
               ],
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
 
             // Title
             Text(
@@ -595,7 +712,7 @@ class _Inspect3dModalState extends State<_Inspect3dModal>
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               'DRAG TO ROTATE 3D • TAP TO PULSE',
               style: GoogleFonts.outfit(
@@ -619,15 +736,84 @@ class _Inspect3dModalState extends State<_Inspect3dModal>
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
 
-            TactileButton.nebula(
-              label: 'COLLECTED',
-              width: double.infinity,
-              height: 52,
-              fontSize: 16,
-              onTap: () => Navigator.pop(context),
+            // Unlock requirement text
+            Text(
+              widget.item.unlockRequirement,
+              style: GoogleFonts.outfit(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isUnlocked ? const Color(0xFF00E676) : const Color(0xFFFFD700),
+              ),
             ),
+
+            const SizedBox(height: 16),
+
+            // Action Button: EQUIPPED vs EQUIP vs BUY vs LOCKED
+            if (isEquipped)
+              TactileButton(
+                label: 'EQUIPPED IN ARENA ✨',
+                width: double.infinity,
+                height: 52,
+                fontSize: 15,
+                faceColorTop: const Color(0xFF00E676),
+                faceColorBottom: const Color(0xFF00B248),
+                rimColor: const Color(0xFF007E33),
+                onTap: () => Navigator.pop(context),
+              )
+            else if (isUnlocked)
+              TactileButton.cosmic(
+                label: 'EQUIP IN ARENA',
+                width: double.infinity,
+                height: 52,
+                fontSize: 16,
+                onTap: () async {
+                  await notifier.equipCollectible(widget.item.id);
+                  AudioService().playUiConfirm();
+                  triggerHaptic(ref, HapticService.mediumTap);
+                  if (context.mounted) Navigator.pop(context);
+                },
+              )
+            else if (canAfford)
+              TactileButton(
+                label: 'UNLOCK FOR ${widget.item.costInGems} 💎',
+                width: double.infinity,
+                height: 52,
+                fontSize: 16,
+                faceColorTop: const Color(0xFFFFD700),
+                faceColorBottom: const Color(0xFFFFA000),
+                rimColor: const Color(0xFFB77900),
+                onTap: () async {
+                  final ok = await notifier.unlockCollectible(widget.item.id, widget.item.costInGems);
+                  if (ok) {
+                    AudioService().playChestOpen();
+                    triggerHaptic(ref, HapticService.gemPickup);
+                    if (context.mounted) Navigator.pop(context);
+                  }
+                },
+              )
+            else
+              TactileButton.dark(
+                label: 'NEED ${widget.item.costInGems} 💎 (Have ${player.gems})',
+                width: double.infinity,
+                height: 52,
+                fontSize: 15,
+                onTap: () {
+                  triggerHaptic(ref, HapticService.lightTap);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Play shifts to earn gems, or unlock at Level ${widget.item.unlockLevel}!',
+                        style: GoogleFonts.outfit(color: Colors.white),
+                      ),
+                      backgroundColor: const Color(0xFF1B233A),
+                      behavior: SnackBarBehavior.floating,
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
@@ -647,3 +833,4 @@ class _Inspect3dModalState extends State<_Inspect3dModal>
     }
   }
 }
+

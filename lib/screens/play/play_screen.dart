@@ -30,7 +30,9 @@ import '../../widgets/animations/achievement_popup.dart';
 /// - Signature World Shift transition with camera push & circular energy wave
 /// - Physics-based answer buttons with satisfying tactile feedback
 class PlayScreen extends ConsumerStatefulWidget {
-  const PlayScreen({super.key});
+  final int? targetLevel;
+
+  const PlayScreen({super.key, this.targetLevel});
 
   @override
   ConsumerState<PlayScreen> createState() => _PlayScreenState();
@@ -81,6 +83,39 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
   // 2.5D Spawning & World Shift flags
   bool _isSpawning = false;
   bool _isWorldShifting = false;
+  bool _hasUsedNebulaShield = false;
+
+  GameObjectType? _getFeaturedType(String? id) {
+    switch (id) {
+      case 'shift_gem':
+        return GameObjectType.gem;
+      case 'cosmic_star':
+      case 'star_core':
+        return GameObjectType.star;
+      case 'lunar_crescent':
+      case 'lunar_crest':
+        return GameObjectType.moon;
+      case 'void_orb':
+      case 'solar_orb':
+        return GameObjectType.orb;
+      case 'solar_bolt':
+        return GameObjectType.bolt;
+      case 'prism_cube':
+      case 'cosmic_cube':
+        return GameObjectType.cube;
+      case 'chronos_ring':
+      case 'astral_ring':
+        return GameObjectType.ring;
+      case 'zen_crystal':
+      case 'crystal_heart':
+        return GameObjectType.crystal;
+      case 'shadow_pyramid':
+      case 'void_prism':
+        return GameObjectType.triangle;
+      default:
+        return GameObjectType.gem;
+    }
+  }
 
   // Hidden developer debug mode (activated by tapping ROUND 5 times)
   int _debugTapCount = 0;
@@ -144,23 +179,29 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
   void _startRound() {
     final player = ref.read(gameStateProvider);
-    final mode = _engine.getRandomUnlockedMode(player.level);
+    final effectiveLevel = widget.targetLevel ?? player.level;
+    final mode = _engine.getRandomUnlockedMode(effectiveLevel);
 
     // ── Adaptive Difficulty Engine ──
     // Scale up difficulty if player has a combo going
     final comboBoost = (_combo * 2).clamp(0, 8);
     // Dial back difficulty with assistance if player is struggling
     final strugglePenalty = _consecutiveMisses > 1 ? -4 : (_lastAnswerCorrect == false ? -2 : 0);
-    final baseDifficulty = player.level + (_round - 1) * 2;
+    final baseDifficulty = effectiveLevel + (_round - 1) * 2;
     final adaptiveDifficulty = max(1, baseDifficulty + comboBoost + strugglePenalty);
 
     // ── Bonus Round System ──
     // Round 5 is the climactic Cosmic Bonus Round (2x Gems)
     final isBonus = _round == 5;
+    final featured = _getFeaturedType(player.equippedCollectibleId);
 
     setState(() {
       _isBonusRound = isBonus;
-      _challenge = _engine.generateChallenge(mode: mode, difficulty: adaptiveDifficulty);
+      _challenge = _engine.generateChallenge(
+        mode: mode,
+        difficulty: adaptiveDifficulty,
+        featuredType: featured,
+      );
       _phase = _GamePhase.intro;
       _selectedAnswer = null;
       _lastAnswerCorrect = null;
@@ -198,7 +239,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
     _sceneController.forward(from: 0);
     final player = ref.read(gameStateProvider);
     final assistance = _consecutiveMisses > 1 ? 0.75 : 0.0;
-    _timeLeft = player.isCalmMode ? (_challenge!.observeTime + 3.5) : (_challenge!.observeTime + assistance);
+    // Chrono Shard Relic perk: +1.0s observation time if player level >= 2
+    final chronoShardBonus = player.level >= 2 ? 1.0 : 0.0;
+    _timeLeft = player.isCalmMode
+        ? (_challenge!.observeTime + 3.5 + chronoShardBonus)
+        : (_challenge!.observeTime + assistance + chronoShardBonus);
 
     // Timer for observation
     _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
@@ -290,9 +335,13 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       _totalXp += result.xpEarned;
       _totalGems += result.gemsEarned;
       _score += 100 + (_combo * 15);
-
-      _correctCount++;
       _consecutiveMisses = 0;
+
+      final player = ref.read(gameStateProvider);
+      // Singularity Bell Relic: harmonic chime on correct shift (level >= 4)
+      if (player.level >= 4) {
+        AudioService().playUiConfirm();
+      }
 
       // ── Bonus Round 2x Gems ──
       if (_isBonusRound) {
@@ -367,8 +416,35 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
         }
       });
     } else {
-      _combo = 0;
-      _consecutiveMisses++;
+      final player = ref.read(gameStateProvider);
+      final hasShield = !_hasUsedNebulaShield && player.currentStreak >= 3;
+      if (hasShield) {
+        _hasUsedNebulaShield = true;
+        triggerHaptic(ref, HapticService.mediumTap);
+        AudioService().playPowerUp();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.shield_rounded, color: AppColors.cyan, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Nebula Heart Shield protected your streak!',
+                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF1E2640),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        _combo = 0;
+        _consecutiveMisses++;
+      }
       ref.read(gameStateProvider.notifier).processChallengeResult(
         correct: false,
         reactionTimeMs: reactionTime,
@@ -422,13 +498,33 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
   }
 
   void _goToResult() {
+    int stars = 0;
+    if (widget.targetLevel != null) {
+      if (_correctCount >= 5) {
+        stars = 3;
+      } else if (_correctCount >= 4) {
+        stars = 2;
+      } else if (_correctCount >= 3) {
+        stars = 1;
+      } else {
+        stars = 0;
+      }
+
+      if (stars > 0) {
+        ref.read(gameStateProvider.notifier).completeWorldLevel(widget.targetLevel!, stars);
+      }
+    }
+
     context.pushReplacement('/result', extra: {
       'score': _score,
       'xp': _totalXp,
       'gems': _totalGems,
       'correct': _correctCount,
-      'total': _round,
+      'total': 5,
       'combo': _combo,
+      'isWorldLevel': widget.targetLevel != null,
+      'targetLevel': widget.targetLevel,
+      'stars': stars,
     });
   }
 

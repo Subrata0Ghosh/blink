@@ -117,6 +117,7 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
       AudioService().playCorrect();
       triggerHaptic(ref, HapticService.perfectAnswer);
       ref.read(gameStateProvider.notifier).updateStreak();
+      ref.read(gameStateProvider.notifier).completeDailyShift();
       ref.read(gameStateProvider.notifier).processChallengeResult(
         correct: true,
         reactionTimeMs: 1200,

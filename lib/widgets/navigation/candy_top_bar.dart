@@ -8,7 +8,6 @@ import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
 import '../buttons/tactile_button.dart';
 import '../characters/observer_avatar_badge.dart';
-import '../modals/daily_rewards_modal.dart';
 import '../modals/daily_quests_modal.dart';
 
 /// 3D Tactile Top Bar for BLINK
@@ -189,10 +188,7 @@ class CandyTopBar extends ConsumerWidget {
                 onTap: onGemsTap ??
                     () {
                       triggerHaptic(ref, HapticService.lightTap);
-                      showDialog(
-                        context: context,
-                        builder: (context) => const DailyRewardsModal(),
-                      );
+                      context.push('/collect');
                     },
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -226,7 +222,7 @@ class CandyTopBar extends ConsumerWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '${player.gems > 0 ? player.gems : 250}',
+                      '${player.gems}',
                       style: GoogleFonts.outfit(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,

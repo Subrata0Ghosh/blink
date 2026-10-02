@@ -236,13 +236,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                                       const SizedBox(width: 6),
                                     ],
 
-                                    // Gems Pill
+                                    // Gems Pill (routes to Shop / Collectibles Vault)
                                     _buildGlassPill(
                                       icon: Icons.diamond_rounded,
                                       iconColor: AppColors.gemCyan,
-                                      label: '${player.gems > 0 ? player.gems : 250}',
+                                      label: '${player.gems}',
                                       glowColor: AppColors.gemCyan,
-                                      onTap: _openDailyRewards,
+                                      onTap: () {
+                                        triggerHaptic(ref, HapticService.lightTap);
+                                        context.push('/collect');
+                                      },
                                     ),
                                   ],
                                 ),
@@ -589,15 +592,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                           // Daily Events circle
                           TactileButton.circle(
                             size: 48,
-                            faceColorTop: AppColors.novaOrangeLight,
-                            faceColorBottom: AppColors.novaOrangeDark,
-                            rimColor: AppColors.novaOrangeRim,
+                            faceColorTop: player.isDailyShiftCompletedToday
+                                ? const Color(0xFF00E676)
+                                : AppColors.novaOrangeLight,
+                            faceColorBottom: player.isDailyShiftCompletedToday
+                                ? const Color(0xFF00A854)
+                                : AppColors.novaOrangeDark,
+                            rimColor: player.isDailyShiftCompletedToday
+                                ? const Color(0xFF00753A)
+                                : AppColors.novaOrangeRim,
                             onTap: () {
                               triggerHaptic(ref, HapticService.lightTap);
                               context.push('/daily-shift');
                             },
-                            child: const Icon(
-                              Icons.today_rounded,
+                            child: Icon(
+                              player.isDailyShiftCompletedToday
+                                  ? Icons.check_circle_rounded
+                                  : Icons.today_rounded,
                               color: Colors.white,
                               size: 22,
                             ),

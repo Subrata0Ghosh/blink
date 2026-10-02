@@ -80,23 +80,27 @@ GoRouter createRouter({bool? onboardingComplete}) {
       ),
       GoRoute(
         path: '/play',
-        pageBuilder: (context, state) => CustomTransitionPage(
-          key: state.pageKey,
-          transitionDuration: const Duration(milliseconds: 500),
-          reverseTransitionDuration: const Duration(milliseconds: 400),
-          child: const PlayScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            // Zoom-in with slight scale for "entering the arena" feel
-            final scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-            );
-            final fadeAnim = CurvedAnimation(parent: animation, curve: Curves.easeIn);
-            return FadeTransition(
-              opacity: fadeAnim,
-              child: ScaleTransition(scale: scaleAnim, child: child),
-            );
-          },
-        ),
+        pageBuilder: (context, state) {
+          final levelStr = state.uri.queryParameters['level'];
+          final targetLevel = levelStr != null ? int.tryParse(levelStr) : null;
+          return CustomTransitionPage(
+            key: state.pageKey,
+            transitionDuration: const Duration(milliseconds: 500),
+            reverseTransitionDuration: const Duration(milliseconds: 400),
+            child: PlayScreen(targetLevel: targetLevel),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              // Zoom-in with slight scale for "entering the arena" feel
+              final scaleAnim = Tween<double>(begin: 0.85, end: 1.0).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              );
+              final fadeAnim = CurvedAnimation(parent: animation, curve: Curves.easeIn);
+              return FadeTransition(
+                opacity: fadeAnim,
+                child: ScaleTransition(scale: scaleAnim, child: child),
+              );
+            },
+          );
+        },
       ),
       GoRoute(
         path: '/world',

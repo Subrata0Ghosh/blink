@@ -18,6 +18,11 @@ void main() {
       await prefs.setInt('level', 5);
       await prefs.setInt('gems', 250);
       await prefs.setDouble('musicVolume', 0.7);
+      await prefs.setStringList('unlockedCollectibleIds', ['shift_gem', 'cosmic_star']);
+      await prefs.setString('equippedCollectibleId', 'cosmic_star');
+      await prefs.setInt('unlockedWorldLevel', 3);
+      await prefs.setString('levelStars', '1:3,2:2');
+      await prefs.setString('lastDailyShiftCompletedDate', '2026-10-02T10:00:00.000');
 
       final notifier = GameStateNotifier(prefs);
 
@@ -27,6 +32,11 @@ void main() {
       expect(notifier.state.level, 5);
       expect(notifier.state.gems, 250);
       expect(notifier.state.musicVolume, 0.7);
+      expect(notifier.state.unlockedCollectibleIds, ['shift_gem', 'cosmic_star']);
+      expect(notifier.state.equippedCollectibleId, 'cosmic_star');
+      expect(notifier.state.unlockedWorldLevel, 3);
+      expect(notifier.state.levelStars, {1: 3, 2: 2});
+      expect(notifier.state.lastDailyShiftCompletedDate, DateTime.parse('2026-10-02T10:00:00.000'));
     });
 
     test('completeOnboarding immediately saves onboardingComplete and name without race conditions', () async {
@@ -84,6 +94,39 @@ void main() {
       expect(newLaunchNotifier.state.gems, notifier.state.gems);
       expect(newLaunchNotifier.state.xp, notifier.state.xp);
       expect(newLaunchNotifier.state.displayName, 'Cosmic Scout');
+    });
+
+    test('Progression actions (collectibles, world levels, daily shifts) persist across restarts', () async {
+      final prefs = await SharedPreferences.getInstance();
+      final notifier = GameStateNotifier(prefs);
+
+      await notifier.addGems(500);
+      await notifier.unlockCollectible('prism_cube', 200);
+      await notifier.equipCollectible('prism_cube');
+      await notifier.completeWorldLevel(1, 3);
+      await notifier.completeDailyShift();
+
+      // Verify in-memory state
+      expect(notifier.state.unlockedCollectibleIds, contains('prism_cube'));
+      expect(notifier.state.equippedCollectibleId, 'prism_cube');
+      expect(notifier.state.unlockedWorldLevel, 2);
+      expect(notifier.state.levelStars[1], 3);
+      expect(notifier.state.lastDailyShiftCompletedDate, isNotNull);
+
+      // Verify SharedPreferences
+      expect(prefs.getStringList('unlockedCollectibleIds'), contains('prism_cube'));
+      expect(prefs.getString('equippedCollectibleId'), 'prism_cube');
+      expect(prefs.getInt('unlockedWorldLevel'), 2);
+      expect(prefs.getString('levelStars'), contains('1:3'));
+      expect(prefs.getString('lastDailyShiftCompletedDate'), isNotNull);
+
+      // Simulate next launch / new instance
+      final restarted = GameStateNotifier(prefs);
+      expect(restarted.state.unlockedCollectibleIds, contains('prism_cube'));
+      expect(restarted.state.equippedCollectibleId, 'prism_cube');
+      expect(restarted.state.unlockedWorldLevel, 2);
+      expect(restarted.state.levelStars[1], 3);
+      expect(restarted.state.lastDailyShiftCompletedDate, isNotNull);
     });
 
     test('Riverpod ProviderScope correctly injects sharedPreferencesProvider', () async {

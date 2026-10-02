@@ -208,6 +208,7 @@ class AudioService {
   Future<void> playCombo() async => _playSfx('combo');
   Future<void> playGemPickup() async => _playSfx('gem_pickup');
   Future<void> playLevelUp() async => _playSfx('level_up');
+  Future<void> playPowerUp() async => _playSfx('level_up');
   Future<void> playChestOpen() async => _playSfx('chest_open');
   Future<void> playMysteryStinger() async => _playSfx('chest_open');
   Future<void> playTransitionWhoosh() async => _playSfx('ui_confirm');

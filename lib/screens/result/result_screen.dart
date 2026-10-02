@@ -59,6 +59,9 @@ class _ResultScreenState extends ConsumerState<ResultScreen> with TickerProvider
   int get _correct => widget.results['correct'] ?? 0;
   int get _total => widget.results['total'] ?? 5;
   int get _combo => widget.results['combo'] ?? 0;
+  bool get _isWorldLevel => widget.results['isWorldLevel'] == true;
+  int? get _targetLevel => widget.results['targetLevel'] as int?;
+  int get _stars => widget.results['stars'] ?? 0;
 
   String get _titleText {
     final accuracy = _total > 0 ? _correct / _total : 0;
@@ -205,22 +208,26 @@ class _ResultScreenState extends ConsumerState<ResultScreen> with TickerProvider
     _delay(2950, () {
       _buttonsController.forward();
 
-      // Start play-again countdown
-      _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-        if (!mounted) {
-          timer.cancel();
-          return;
-        }
-        setState(() {
-          _playAgainCountdown--;
-          if (_playAgainCountdown <= 0) {
+      // Only start play-again countdown for endless mode
+      if (!_isWorldLevel) {
+        _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+          if (!mounted) {
             timer.cancel();
-            try {
-              context.pushReplacement('/play');
-            } catch (_) {}
+            return;
           }
+          setState(() {
+            _playAgainCountdown--;
+            if (_playAgainCountdown <= 0) {
+              timer.cancel();
+              try {
+                context.pushReplacement('/play');
+              } catch (_) {}
+            }
+          });
         });
-      });
+      } else {
+        setState(() => _playAgainCountdown = -1);
+      }
     });
   }
 
@@ -281,25 +288,73 @@ class _ResultScreenState extends ConsumerState<ResultScreen> with TickerProvider
                               builder: (context, _) {
                                 return Transform.scale(
                                   scale: _titleScale.value,
-                                  child: Text(
-                                    _titleText,
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 44,
-                                      fontWeight: FontWeight.w900,
-                                      color: _titleColor,
-                                      letterSpacing: 5,
-                                      shadows: [
-                                        Shadow(
-                                          color: _titleColor.withValues(alpha: 0.6),
-                                          blurRadius: 30,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (_isWorldLevel) ...[
+                                        Container(
+                                          margin: const EdgeInsets.only(bottom: 8),
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.gold.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(20),
+                                            border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                                          ),
+                                          child: Text(
+                                            'LEVEL $_targetLevel ${_stars > 0 ? "PASSED" : "FAILED"}',
+                                            style: GoogleFonts.outfit(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w800,
+                                              color: AppColors.gold,
+                                              letterSpacing: 2,
+                                            ),
+                                          ),
                                         ),
-                                        Shadow(
-                                          color: _titleColor.withValues(alpha: 0.3),
-                                          blurRadius: 60,
-                                          offset: const Offset(0, 4),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: List.generate(3, (index) {
+                                            final filled = index < _stars;
+                                            return Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                                              child: Icon(
+                                                Icons.star_rounded,
+                                                size: 38,
+                                                color: filled ? AppColors.gold : Colors.white24,
+                                                shadows: filled
+                                                    ? [
+                                                        Shadow(
+                                                          color: AppColors.gold.withValues(alpha: 0.8),
+                                                          blurRadius: 15,
+                                                        ),
+                                                      ]
+                                                    : null,
+                                              ),
+                                            );
+                                          }),
                                         ),
+                                        const SizedBox(height: 8),
                                       ],
-                                    ),
+                                      Text(
+                                        _titleText,
+                                        style: GoogleFonts.outfit(
+                                          fontSize: 44,
+                                          fontWeight: FontWeight.w900,
+                                          color: _titleColor,
+                                          letterSpacing: 5,
+                                          shadows: [
+                                            Shadow(
+                                              color: _titleColor.withValues(alpha: 0.6),
+                                              blurRadius: 30,
+                                            ),
+                                            Shadow(
+                                              color: _titleColor.withValues(alpha: 0.3),
+                                              blurRadius: 60,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 );
                               },
@@ -535,13 +590,17 @@ class _ResultScreenState extends ConsumerState<ResultScreen> with TickerProvider
                                 children: [
                                   // Next Challenge with optional countdown
                                   TactileButton.cosmic(
-                                    label: 'NEXT CHALLENGE',
+                                    label: _isWorldLevel ? 'WORLD MAP' : 'NEXT CHALLENGE',
                                     width: double.infinity,
                                     height: 54,
                                     fontSize: 17,
                                     onTap: () {
                                       _cancelCountdown();
-                                      context.pushReplacement('/play');
+                                      if (_isWorldLevel) {
+                                        context.go('/world');
+                                      } else {
+                                        context.pushReplacement('/play');
+                                      }
                                     },
                                   ),
                                   if (_playAgainCountdown > 0) ...[

@@ -13,24 +13,25 @@ class ChallengeEngine {
   Challenge generateChallenge({
     required ChallengeMode mode,
     required int difficulty, // 1-100+
+    GameObjectType? featuredType,
   }) {
     switch (mode) {
       case ChallengeMode.change:
-        return _generateChangeChallenge(difficulty);
+        return _generateChangeChallenge(difficulty, featuredType: featuredType);
       case ChallengeMode.remember:
-        return _generateRememberChallenge(difficulty);
+        return _generateRememberChallenge(difficulty, featuredType: featuredType);
       case ChallengeMode.swap:
-        return _generateSwapChallenge(difficulty);
+        return _generateSwapChallenge(difficulty, featuredType: featuredType);
       case ChallengeMode.sequence:
         return _generateSequenceChallenge(difficulty);
       case ChallengeMode.spatial:
-        return _generateSpatialChallenge(difficulty);
+        return _generateSpatialChallenge(difficulty, featuredType: featuredType);
       case ChallengeMode.predict:
-        return _generatePredictChallenge(difficulty);
+        return _generatePredictChallenge(difficulty, featuredType: featuredType);
       case ChallengeMode.hiddenRule:
-        return _generateHiddenRuleChallenge(difficulty);
+        return _generateHiddenRuleChallenge(difficulty, featuredType: featuredType);
       case ChallengeMode.chaos:
-        return _generateChaosChallengeWrapped(difficulty);
+        return _generateChaosChallengeWrapped(difficulty, featuredType: featuredType);
     }
   }
 
@@ -53,9 +54,9 @@ class ChallengeEngine {
   }
 
   // ────────── MODE B: CHANGE ──────────
-  Challenge _generateChangeChallenge(int difficulty) {
+  Challenge _generateChangeChallenge(int difficulty, {GameObjectType? featuredType}) {
     final count = _objectCountForDifficulty(difficulty);
-    final originalScene = _sceneGen.generateScene(objectCount: count);
+    final originalScene = _sceneGen.generateScene(objectCount: count, featuredType: featuredType);
 
     // Pick a random change type
     final changeTypes = [ChangeType.colorChanged, ChangeType.objectRemoved, ChangeType.objectMoved];
@@ -159,9 +160,9 @@ class ChallengeEngine {
   }
 
   // ────────── MODE A: REMEMBER ──────────
-  Challenge _generateRememberChallenge(int difficulty) {
+  Challenge _generateRememberChallenge(int difficulty, {GameObjectType? featuredType}) {
     final count = _objectCountForDifficulty(difficulty);
-    final scene = _sceneGen.generateScene(objectCount: count);
+    final scene = _sceneGen.generateScene(objectCount: count, featuredType: featuredType);
 
     final targetIdx = _random.nextInt(scene.length);
     final target = scene[targetIdx];
@@ -220,9 +221,9 @@ class ChallengeEngine {
   }
 
   // ────────── MODE C: SWAP ──────────
-  Challenge _generateSwapChallenge(int difficulty) {
+  Challenge _generateSwapChallenge(int difficulty, {GameObjectType? featuredType}) {
     final count = _objectCountForDifficulty(difficulty).clamp(4, 8);
-    final scene = _sceneGen.generateScene(objectCount: count);
+    final scene = _sceneGen.generateScene(objectCount: count, featuredType: featuredType);
 
     final indices = List.generate(scene.length, (i) => i)..shuffle(_random);
     final swapA = indices[0];
@@ -311,9 +312,9 @@ class ChallengeEngine {
   }
 
   // ────────── MODE F: SPATIAL ──────────
-  Challenge _generateSpatialChallenge(int difficulty) {
+  Challenge _generateSpatialChallenge(int difficulty, {GameObjectType? featuredType}) {
     final count = _objectCountForDifficulty(difficulty);
-    final scene = _sceneGen.generateScene(objectCount: count);
+    final scene = _sceneGen.generateScene(objectCount: count, featuredType: featuredType);
 
     // Pick a reference point
     final refIdx = _random.nextInt(scene.length);
@@ -370,10 +371,10 @@ class ChallengeEngine {
   }
 
   // ────────── MODE D: PREDICT ──────────
-  Challenge _generatePredictChallenge(int difficulty) {
+  Challenge _generatePredictChallenge(int difficulty, {GameObjectType? featuredType}) {
     // Show an object moving in a direction, ask where it ends up
     final count = _objectCountForDifficulty(difficulty).clamp(3, 5);
-    final scene = _sceneGen.generateScene(objectCount: count);
+    final scene = _sceneGen.generateScene(objectCount: count, featuredType: featuredType);
 
     final movingIdx = _random.nextInt(scene.length);
     final movingObj = scene[movingIdx];
@@ -422,7 +423,7 @@ class ChallengeEngine {
   }
 
   // ────────── MODE G: HIDDEN RULE ──────────
-  Challenge _generateHiddenRuleChallenge(int difficulty) {
+  Challenge _generateHiddenRuleChallenge(int difficulty, {GameObjectType? featuredType}) {
     // Show examples of a rule, ask player to identify it
     final rules = [
       _HiddenRule(
@@ -446,7 +447,7 @@ class ChallengeEngine {
     ];
 
     final rule = rules[_random.nextInt(rules.length)];
-    final scene = _sceneGen.generateScene(objectCount: 4);
+    final scene = _sceneGen.generateScene(objectCount: 4, featuredType: featuredType);
 
     final allAnswers = [rule.correctAnswer, ...rule.wrongAnswers]..shuffle(_random);
 
@@ -466,11 +467,11 @@ class ChallengeEngine {
   }
 
   // ────────── MODE H: CHAOS ──────────
-  Challenge _generateChaosChallengeWrapped(int difficulty) {
+  Challenge _generateChaosChallengeWrapped(int difficulty, {GameObjectType? featuredType}) {
     // Combine random mode
     final modes = [ChallengeMode.change, ChallengeMode.remember, ChallengeMode.spatial];
     final mode = modes[_random.nextInt(modes.length)];
-    final challenge = generateChallenge(mode: mode, difficulty: difficulty + 10);
+    final challenge = generateChallenge(mode: mode, difficulty: difficulty + 10, featuredType: featuredType);
     return Challenge(
       mode: ChallengeMode.chaos,
       originalScene: challenge.originalScene,
@@ -498,17 +499,17 @@ class ChallengeEngine {
     return ChallengeMode.chaos;
   }
 
-  /// Randomly pick a mode from unlocked modes for variety
+  /// Randomly pick a mode from unlocked modes for variety, calibrated across 20 campaign levels
   ChallengeMode getRandomUnlockedMode(int level) {
     final unlocked = <ChallengeMode>[];
     unlocked.add(ChallengeMode.change);
-    if (level >= 5) unlocked.add(ChallengeMode.remember);
-    if (level >= 15) unlocked.add(ChallengeMode.swap);
-    if (level >= 25) unlocked.add(ChallengeMode.sequence);
-    if (level >= 35) unlocked.add(ChallengeMode.spatial);
-    if (level >= 50) unlocked.add(ChallengeMode.predict);
-    if (level >= 70) unlocked.add(ChallengeMode.hiddenRule);
-    if (level >= 90) unlocked.add(ChallengeMode.chaos);
+    if (level >= 3) unlocked.add(ChallengeMode.remember);
+    if (level >= 6) unlocked.add(ChallengeMode.swap);
+    if (level >= 9) unlocked.add(ChallengeMode.sequence);
+    if (level >= 12) unlocked.add(ChallengeMode.spatial);
+    if (level >= 15) unlocked.add(ChallengeMode.predict);
+    if (level >= 18) unlocked.add(ChallengeMode.hiddenRule);
+    if (level >= 20) unlocked.add(ChallengeMode.chaos);
     return unlocked[_random.nextInt(unlocked.length)];
   }
 }

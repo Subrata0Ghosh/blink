@@ -53,7 +53,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         final player = ref.read(gameStateProvider);
-        final levelIndex = (player.level - 1).clamp(0, 19);
+        final levelIndex = (player.unlockedWorldLevel - 1).clamp(0, 19);
         final waypoints = _getWaypoints(MediaQuery.of(context).size.width);
         final levelY = waypoints[levelIndex].dy;
         final viewportHeight = _scrollController.position.viewportDimension;
@@ -223,7 +223,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
                         width: double.infinity,
                         onTap: () {
                           Navigator.pop(context);
-                          context.push('/play');
+                          context.push('/play?level=$levelNum');
                         },
                       )
                     else
@@ -269,7 +269,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
   @override
   Widget build(BuildContext context) {
     final player = ref.watch(gameStateProvider);
-    final currentLevel = player.level.clamp(1, 20);
+    final currentLevel = player.unlockedWorldLevel.clamp(1, 20);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -328,6 +328,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
                                 MediaQuery.of(context).size.width,
                                 player.selectedAvatarId,
                                 player.selectedFrameId,
+                                player.levelStars,
                               ),
                             ),
                           );
@@ -470,6 +471,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
     double screenWidth,
     String avatarId,
     String frameId,
+    Map<int, int> levelStars,
   ) {
     final List<Widget> nodes = [];
     final waypoints = _getWaypoints(screenWidth);
@@ -486,7 +488,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
       final levelNum = i + 1;
       final isCurrent = levelNum == activeLevel;
       final isUnlocked = levelNum <= activeLevel;
-      final stars = isUnlocked ? (levelNum < activeLevel ? 3 : 2) : 0;
+      final stars = levelStars[levelNum] ?? (isUnlocked ? (levelNum < activeLevel ? 3 : 1) : 0);
       final biome = _getBiomeForLevel(levelNum);
       final isMilestone = levelNum % 4 == 0;
 

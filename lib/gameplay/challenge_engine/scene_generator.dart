@@ -10,11 +10,16 @@ class SceneGenerator {
   List<GameObject> generateScene({
     required int objectCount,
     int? seed,
+    GameObjectType? featuredType,
   }) {
     final rng = seed != null ? Random(seed) : _random;
     final objects = <GameObject>[];
     final usedPositions = <Offset>[];
     final types = List<GameObjectType>.from(GameObjectType.values)..shuffle(rng);
+    if (featuredType != null) {
+      types.remove(featuredType);
+      types.insert(0, featuredType);
+    }
     final colors = List<NamedColor>.from(GameColors.all)..shuffle(rng);
 
     for (int i = 0; i < objectCount; i++) {
