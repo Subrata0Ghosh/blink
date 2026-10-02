@@ -9,25 +9,28 @@ import '../../services/haptic_service.dart';
 import '../buttons/tactile_button.dart';
 import '../characters/observer_avatar_badge.dart';
 import '../modals/daily_quests_modal.dart';
+import '../modals/daily_rewards_modal.dart';
 
 /// 3D Tactile Top Bar for BLINK
 /// Features:
 /// - 3D docked base with extruded dark rim and subtle drop shadow
 /// - 3D tactile circular Mail button with glossy dome and push-down effect
-/// - 3D tactile Lives / Heart pill with physical depression when tapped
+/// - 3D tactile Streak / Flame pill tracking daily logins and opening rewards
 /// - 3D elevated Center Avatar medallion with double bevel rim and level star
 /// - 3D tactile Gems pill with interactive 3D '+' button
 /// - 3D tactile circular Settings button matching Image 1 & 2
 class CandyTopBar extends ConsumerWidget {
   final VoidCallback? onSettingsTap;
   final VoidCallback? onMailTap;
-  final VoidCallback? onLivesTap;
+  final VoidCallback? onStreakTap;
+  final VoidCallback? onLivesTap; // Backwards compatibility alias
   final VoidCallback? onGemsTap;
 
   const CandyTopBar({
     super.key,
     this.onSettingsTap,
     this.onMailTap,
+    this.onStreakTap,
     this.onLivesTap,
     this.onGemsTap,
   });
@@ -84,56 +87,33 @@ class CandyTopBar extends ConsumerWidget {
 
               const SizedBox(width: 4),
 
-              // ──── 2. 3D LIVES / HEARTS PILL ────
+              // ──── 2. 3D STREAK FLAME PILL ────
               _TactilePill(
-                onTap: onLivesTap ??
+                onTap: onStreakTap ?? onLivesTap ??
                     () {
                       triggerHaptic(ref, HapticService.lightTap);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.favorite_rounded, color: Color(0xFFFF5277), size: 20),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Infinite Cosmic Energy! Play without limits.',
-                                  style: GoogleFonts.outfit(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          backgroundColor: const Color(0xFF1B233A),
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: const BorderSide(color: Color(0xFFFF5277), width: 1.2),
-                          ),
-                          duration: const Duration(seconds: 2),
-                        ),
+                      showDialog(
+                        context: context,
+                        builder: (context) => const DailyRewardsModal(),
                       );
                     },
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // 3D Heart circle
+                    // 3D Flame circle
                     Container(
                       width: 26,
                       height: 26,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFFF5277), Color(0xFFCC184A)],
+                          colors: [Color(0xFFFF9100), Color(0xFFFF3D00)],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFF406E).withValues(alpha: 0.6),
+                            color: const Color(0xFFFF6D00).withValues(alpha: 0.6),
                             blurRadius: 6,
                             offset: const Offset(0, 1),
                           ),
@@ -141,15 +121,15 @@ class CandyTopBar extends ConsumerWidget {
                       ),
                       child: const Center(
                         child: Icon(
-                          Icons.favorite_rounded,
+                          Icons.local_fire_department_rounded,
                           color: Colors.white,
-                          size: 15,
+                          size: 16,
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      'Full',
+                      '${player.currentStreak}d',
                       style: GoogleFonts.outfit(
                         fontSize: 13,
                         fontWeight: FontWeight.w800,
