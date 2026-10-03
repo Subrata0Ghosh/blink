@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,18 +7,24 @@ import '../../core/theme/app_colors.dart';
 import '../../services/audio_service.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
+import '../../models/solar_realm_model.dart';
 import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/characters/observer_avatar_badge.dart';
 import '../../widgets/modals/relics_modal.dart';
 import '../../widgets/navigation/candy_top_bar.dart';
 import '../../widgets/navigation/game_bottom_nav.dart';
 import '../../widgets/particles/particles.dart';
+import '../../widgets/world/biome_bridge_painter.dart';
 import '../../widgets/world/floating_island_painter.dart';
+import '../../widgets/world/solar_orrery_view.dart';
+import '../../widgets/world/story_chronicle_banner.dart';
 
 /// Cosmic Floating Islands Level Progression Map for BLINK
 /// Features:
-/// - Seamless cosmic deep space with stardust (no harsh flat banding)
-/// - 5 Biomes of 3D Floating Islands along the journey
+/// - Solar System Orrery View with smooth macro-to-micro Zoom In / Zoom Out
+/// - Narrative Story Chronicles with Nova's planetary transmission and alien companion lore
+/// - 5 Biomes with distinct island roles: Citadel Castles, Living Alien Sanctuaries, Crystal Spires, and Gateways
+/// - 5 Biome Bridge types: Vines, Prismatic Rainbow, Molten Basalt Plasma, Celestial Clouds, and Cyber Data Grids
 /// - Level nodes rendered as authentic 3D tactile buttons with push-down tapping physics
 /// - Current active level with pulsating 3D avatar indicator
 /// - Interactive Level Details popup with Image 2 Close button and 3D Play button
@@ -34,6 +39,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
   late ScrollController _scrollController;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  bool _isOrreryView = false;
 
   @override
   void initState() {
@@ -60,6 +66,36 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
         final targetScroll = (levelY - viewportHeight / 2).clamp(0.0, _scrollController.position.maxScrollExtent);
         _scrollController.jumpTo(targetScroll);
       }
+    });
+  }
+
+  void _toggleOrreryView() {
+    triggerHaptic(ref, HapticService.mediumTap);
+    AudioService().playUiConfirm();
+    setState(() {
+      _isOrreryView = !_isOrreryView;
+    });
+  }
+
+  void _onSelectRealmFromOrrery(SolarRealm realm) {
+    setState(() {
+      _isOrreryView = false;
+    });
+    _scrollToRealm(realm);
+  }
+
+  void _scrollToRealm(SolarRealm realm) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final baseYs = [2850.0, 2250.0, 1650.0, 1050.0, 450.0];
+      final realmY = baseYs[realm.index.clamp(0, 4)];
+      final viewportHeight = _scrollController.position.viewportDimension;
+      final targetScroll = (realmY - viewportHeight / 2).clamp(0.0, _scrollController.position.maxScrollExtent);
+      _scrollController.animateTo(
+        targetScroll,
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeInOutCubic,
+      );
     });
   }
 
@@ -270,6 +306,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     final player = ref.watch(gameStateProvider);
     final currentLevel = player.unlockedWorldLevel.clamp(1, 20);
+    final currentRealm = SolarRealm.getRealmForLevel(currentLevel);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -278,107 +315,134 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
           // ──── 1. 3D COSMIC TOP BAR ────
           const CandyTopBar(),
 
-          // ──── 2. 3D FLOATING ISLANDS MAP ────
+          // ──── 2. STORY CHRONICLE / MISSION BANNER ────
+          StoryChronicleBanner(
+            currentRealm: currentRealm,
+            activeLevel: currentLevel,
+            isOrreryOpen: _isOrreryView,
+            onToggleOrrery: _toggleOrreryView,
+          ),
+
+          // ──── 3. MAIN ARENA (Animated switch between Archipelago & Orrery) ────
           Expanded(
-            child: Stack(
-              children: [
-                // Deep space gradient (no flat bands, smooth cosmic aura)
-                Positioned.fill(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      gradient: RadialGradient(
-                        center: Alignment(0.0, -0.2),
-                        radius: 1.5,
-                        colors: [
-                          Color(0xFF141936),
-                          Color(0xFF0C1022),
-                          Color(0xFF070A14),
-                        ],
-                        stops: [0.0, 0.55, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Floating cosmic particle field
-                const Positioned.fill(
-                  child: StarField(starCount: 40),
-                ),
-
-                // Scrollable floating islands map
-                Positioned.fill(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    physics: const BouncingScrollPhysics(),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 3300,
-                      child: AnimatedBuilder(
-                        animation: _pulseController,
-                        builder: (context, _) {
-                          return CustomPaint(
-                            painter: _ConstellationPathPainter(
-                              waypoints: _getWaypoints(MediaQuery.of(context).size.width),
-                              activeLevel: currentLevel,
-                              pulseValue: _pulseController.value,
-                            ),
-                            child: Stack(
-                              children: _buildLevelNodes(
-                                currentLevel,
-                                MediaQuery.of(context).size.width,
-                                player.selectedAvatarId,
-                                player.selectedFrameId,
-                                player.levelStars,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              child: _isOrreryView
+                  ? SolarOrreryView(
+                      key: const ValueKey('solar_orrery_view'),
+                      activeLevel: currentLevel,
+                      levelStars: player.levelStars,
+                      onSelectRealm: _onSelectRealmFromOrrery,
+                      onZoomInToCurrent: () => _onSelectRealmFromOrrery(currentRealm),
+                    )
+                  : Stack(
+                      key: const ValueKey('archipelago_view'),
+                      children: [
+                        // Deep space gradient (no flat bands, smooth cosmic aura)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: RadialGradient(
+                                center: Alignment(0.0, -0.2),
+                                radius: 1.5,
+                                colors: [
+                                  Color(0xFF141936),
+                                  Color(0xFF0C1022),
+                                  Color(0xFF070A14),
+                                ],
+                                stops: [0.0, 0.55, 1.0],
                               ),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        ),
+
+                        // Floating cosmic particle field
+                        const Positioned.fill(
+                          child: StarField(starCount: 40),
+                        ),
+
+                        // Scrollable floating islands map
+                        Positioned.fill(
+                          child: SingleChildScrollView(
+                            controller: _scrollController,
+                            physics: const BouncingScrollPhysics(),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 3300,
+                              child: Stack(
+                                children: [
+                                  // 1. Procedural Animated Biome Bridges
+                                  Positioned.fill(
+                                    child: AnimatedBuilder(
+                                      animation: _pulseController,
+                                      builder: (context, _) {
+                                        return CustomPaint(
+                                          painter: BiomeBridgePainter(
+                                            waypoints: _getWaypoints(MediaQuery.of(context).size.width),
+                                            activeLevel: currentLevel,
+                                            pulseValue: _pulseController.value,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+
+                                  // 2. 3D Floating Island Nodes
+                                  ..._buildLevelNodes(
+                                    currentLevel,
+                                    MediaQuery.of(context).size.width,
+                                    player.selectedAvatarId,
+                                    player.selectedFrameId,
+                                    player.levelStars,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // 3D Tactile Mystery Portal Button
+                        Positioned(
+                          bottom: 16,
+                          right: 16,
+                          child: TactileButton.portal(
+                            label: 'MYSTERY PORTAL',
+                            width: 155,
+                            height: 44,
+                            fontSize: 12,
+                            onTap: () {
+                              triggerHaptic(ref, HapticService.mediumTap);
+                              context.push('/mystery');
+                            },
+                          ),
+                        ),
+
+                        // 3D Tactile Constellation Codex / Relics Button
+                        Positioned(
+                          bottom: 16,
+                          left: 16,
+                          child: TactileButton.solar(
+                            label: 'RELICS',
+                            icon: Icons.auto_awesome_rounded,
+                            width: 110,
+                            height: 44,
+                            fontSize: 12,
+                            onTap: () {
+                              triggerHaptic(ref, HapticService.mediumTap);
+                              AudioService().playUiConfirm();
+                              showDialog(
+                                context: context,
+                                builder: (_) => const RelicsModal(),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ),
-
-                // 3D Tactile Mystery Portal Button
-                Positioned(
-                  bottom: 16,
-                  right: 16,
-                  child: TactileButton.portal(
-                    label: 'MYSTERY PORTAL',
-                    width: 155,
-                    height: 44,
-                    fontSize: 12,
-                    onTap: () {
-                      triggerHaptic(ref, HapticService.mediumTap);
-                      context.push('/mystery');
-                    },
-                  ),
-                ),
-
-                // 3D Tactile Constellation Codex / Relics Button
-                Positioned(
-                  bottom: 16,
-                  left: 16,
-                  child: TactileButton.solar(
-                    label: 'RELICS',
-                    icon: Icons.auto_awesome_rounded,
-                    width: 110,
-                    height: 44,
-                    fontSize: 12,
-                    onTap: () {
-                      triggerHaptic(ref, HapticService.mediumTap);
-                      AudioService().playUiConfirm();
-                      showDialog(
-                        context: context,
-                        builder: (_) => const RelicsModal(),
-                      );
-                    },
-                  ),
-                ),
-              ],
             ),
           ),
 
-          // ──── 3. 3D COSMIC BOTTOM NAVIGATION ────
+          // ──── 4. 3D COSMIC BOTTOM NAVIGATION ────
           const GameBottomNav(currentIndex: 0),
         ],
       ),
@@ -421,7 +485,11 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
     // are added FIRST, and foreground islands (larger Y) are added LAST!
     // In Flutter Stack, later children render ON TOP of earlier children.
     final indexedWaypoints = List.generate(waypoints.length, (i) => MapEntry(i, waypoints[i]))
-      ..sort((a, b) => a.value.dy.compareTo(b.value.dy));
+      ..sort((a, b) {
+        final cmp = a.value.dy.compareTo(b.value.dy);
+        if (cmp != 0) return cmp;
+        return a.key.compareTo(b.key);
+      });
 
     for (final entry in indexedWaypoints) {
       final i = entry.key;
@@ -432,20 +500,28 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
       final stars = levelStars[levelNum] ?? (isUnlocked ? (levelNum < activeLevel ? 3 : 1) : 0);
       final biome = _getBiomeForLevel(levelNum);
       final isMilestone = levelNum % 4 == 0;
+      final role = SolarRealm.getIslandRole(levelNum);
+      final realm = SolarRealm.getRealmForLevel(levelNum);
 
-      final islandWidth = isMilestone ? 168.0 : 145.0;
-      final islandHeight = isMilestone ? 160.0 : 140.0;
+      final islandWidth = isMilestone ? 172.0 : 152.0;
+      final islandHeight = isMilestone ? 164.0 : 144.0;
+      final isRightSideOfScreen = wp.dx > (screenWidth * 0.50);
 
       nodes.add(
         Positioned(
+          key: ValueKey('island_pos_$levelNum'),
           top: wp.dy - (islandHeight * 0.28),
           left: wp.dx - (islandWidth * 0.5),
           child: FloatingIslandWidget(
+            key: ValueKey('floating_island_$levelNum'),
             biome: biome,
             width: islandWidth,
             height: islandHeight,
             isCurrent: isCurrent,
             isMilestone: isMilestone,
+            role: role,
+            alien: role == IslandRole.alienSanctuary ? realm.alien : null,
+            alienOnLeft: isRightSideOfScreen,
             child: _TactileLevelNode(
               levelNum: levelNum,
               stars: stars,
@@ -835,164 +911,3 @@ class _TactileLevelNodeState extends State<_TactileLevelNode> with SingleTickerP
   }
 }
 
-/// Custom painter that draws glowing constellation links and warp bridges across archipelagos
-class _ConstellationPathPainter extends CustomPainter {
-  final List<Offset> waypoints;
-  final int activeLevel;
-  final double pulseValue;
-
-  _ConstellationPathPainter({
-    required this.waypoints,
-    required this.activeLevel,
-    required this.pulseValue,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (waypoints.isEmpty) return;
-
-    // 1. Draw Biome Nebula Atmosphere Disks under each archipelago
-    final baseYs = [2850.0, 2250.0, 1650.0, 1050.0, 450.0];
-    final nebulaColors = [
-      const Color(0xFF10B981), // Verdant Emerald
-      const Color(0xFFA855F7), // Cosmic Purple
-      const Color(0xFFFF6D00), // Solar Amber
-      const Color(0xFF38BDF8), // Aether Sky Blue
-      AppColors.cyan,          // Cyber Cyan
-    ];
-
-    for (int b = 0; b < baseYs.length; b++) {
-      final cy = baseYs[b];
-      final color = nebulaColors[b];
-      final rect = Rect.fromCircle(center: Offset(size.width * 0.50, cy), radius: 240);
-      final paint = Paint()
-        ..shader = RadialGradient(
-          colors: [
-            color.withValues(alpha: 0.12),
-            color.withValues(alpha: 0.04),
-            Colors.transparent,
-          ],
-          stops: const [0.0, 0.55, 1.0],
-        ).createShader(rect);
-      canvas.drawCircle(Offset(size.width * 0.50, cy), 240, paint);
-    }
-
-    // 2. Draw Constellation Links within Archipelagos
-    for (int b = 0; b < 5; b++) {
-      final baseIdx = 4 * b;
-      if (baseIdx + 3 >= waypoints.length) break;
-
-      final pBase = waypoints[baseIdx];
-      final pWest = waypoints[baseIdx + 1];
-      final pEast = waypoints[baseIdx + 2];
-      final pGate = waypoints[baseIdx + 3];
-
-      _drawLink(canvas, pBase, pWest, (baseIdx + 2) <= activeLevel, (baseIdx + 2) == activeLevel);
-      _drawLink(canvas, pBase, pEast, (baseIdx + 3) <= activeLevel, (baseIdx + 3) == activeLevel);
-      _drawLink(canvas, pWest, pGate, (baseIdx + 4) <= activeLevel, (baseIdx + 4) == activeLevel);
-      _drawLink(canvas, pEast, pGate, (baseIdx + 4) <= activeLevel, (baseIdx + 4) == activeLevel);
-
-      // 3. Draw Cosmic Warp Bridge between Gateways
-      if (b < 4 && baseIdx + 4 < waypoints.length) {
-        final pNextBase = waypoints[baseIdx + 4];
-        final isBridgeActive = (baseIdx + 5) <= activeLevel;
-        _drawWarpBridge(canvas, pGate, pNextBase, isBridgeActive);
-      }
-    }
-  }
-
-  void _drawLink(Canvas canvas, Offset from, Offset to, bool isActive, bool isCurrent) {
-    final paint = Paint()
-      ..strokeWidth = isActive ? 2.2 : 1.2
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    if (isActive) {
-      paint.color = AppColors.cyan.withValues(alpha: 0.65);
-      paint.maskFilter = const MaskFilter.blur(BlurStyle.solid, 2);
-    } else if (isCurrent) {
-      paint.color = AppColors.cosmicCyanLight.withValues(alpha: 0.45);
-    } else {
-      paint.color = Colors.white.withValues(alpha: 0.12);
-    }
-
-    _drawDashedLine(canvas, from, to, paint);
-
-    // Stardust energy pulse travelling along active links
-    if (isActive) {
-      final t = (pulseValue + (from.dy * 0.001)) % 1.0;
-      final px = from.dx + (to.dx - from.dx) * t;
-      final py = from.dy + (to.dy - from.dy) * t;
-
-      final pulsePaint = Paint()
-        ..color = Colors.white
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-      canvas.drawCircle(Offset(px, py), 3.5, pulsePaint);
-    }
-  }
-
-  void _drawWarpBridge(Canvas canvas, Offset from, Offset to, bool isActive) {
-    final beamPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = isActive ? 3.0 : 1.5;
-
-    if (isActive) {
-      beamPaint.color = AppColors.cyan.withValues(alpha: 0.45);
-      beamPaint.maskFilter = const MaskFilter.blur(BlurStyle.solid, 4);
-    } else {
-      beamPaint.color = Colors.white.withValues(alpha: 0.10);
-    }
-
-    // Double beam
-    final dx = to.dx - from.dx;
-    final dy = to.dy - from.dy;
-    final dist = sqrt(dx * dx + dy * dy);
-    if (dist == 0) return;
-    final nx = -dy / dist * 8;
-    final ny = dx / dist * 8;
-
-    _drawDashedLine(canvas, Offset(from.dx + nx, from.dy + ny), Offset(to.dx + nx, to.dy + ny), beamPaint);
-    _drawDashedLine(canvas, Offset(from.dx - nx, from.dy - ny), Offset(to.dx - nx, to.dy - ny), beamPaint);
-
-    if (isActive) {
-      // Traveling warp pulses
-      for (int i = 0; i < 3; i++) {
-        final t = (pulseValue + (i * 0.33)) % 1.0;
-        final px = from.dx + dx * t;
-        final py = from.dy + dy * t;
-        final glow = Paint()
-          ..color = AppColors.cosmicCyanLight
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-        canvas.drawCircle(Offset(px, py), 4.0, glow);
-        canvas.drawCircle(Offset(px, py), 2.0, Paint()..color = Colors.white);
-      }
-    }
-  }
-
-  void _drawDashedLine(Canvas canvas, Offset from, Offset to, Paint paint) {
-    final dx = to.dx - from.dx;
-    final dy = to.dy - from.dy;
-    final distance = sqrt(dx * dx + dy * dy);
-    const dashLength = 8.0;
-    const gapLength = 6.0;
-    final unitX = dx / distance;
-    final unitY = dy / distance;
-
-    var currentDist = 0.0;
-    while (currentDist < distance) {
-      final startX = from.dx + unitX * currentDist;
-      final startY = from.dy + unitY * currentDist;
-      final endDist = (currentDist + dashLength).clamp(0.0, distance);
-      final endX = from.dx + unitX * endDist;
-      final endY = from.dy + unitY * endDist;
-
-      canvas.drawLine(Offset(startX, startY), Offset(endX, endY), paint);
-      currentDist += dashLength + gapLength;
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _ConstellationPathPainter oldDelegate) {
-    return oldDelegate.activeLevel != activeLevel || oldDelegate.pulseValue != pulseValue;
-  }
-}

@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_assets.dart';
 import '../../core/theme/app_colors.dart';
 
+import '../../models/solar_realm_model.dart';
+import 'island_architectures.dart';
+
 /// Enum defining the 5 cosmic biomes for floating islands in BLINK
 enum IslandBiome {
   verdantAstral,   // Levels 1-4: Emerald grass, mossy cliff strata, crystal seeds
@@ -15,6 +18,7 @@ enum IslandBiome {
 /// A standalone 3D Floating Island widget that cradles one or more level nodes.
 /// Features:
 /// - Isolated high-fidelity 3D platform asset without background
+/// - 4 Distinct architectural roles (Citadel Castle, Alien Sanctuary, Crystal Spire, Realm Gateway)
 /// - Idle cosmic levitation physics with harmonic biome offsets
 /// - True 3D orbiting crystal satellites (depth-sorted behind and in front of the island)
 /// - Pulsing ancient rune dais glow on the active level
@@ -25,6 +29,9 @@ class FloatingIslandWidget extends StatefulWidget {
   final double height;
   final bool isCurrent;
   final bool isMilestone;
+  final IslandRole? role;
+  final AlienCompanion? alien;
+  final bool alienOnLeft;
   final Widget child;
 
   const FloatingIslandWidget({
@@ -34,6 +41,9 @@ class FloatingIslandWidget extends StatefulWidget {
     this.height = 145,
     this.isCurrent = false,
     this.isMilestone = false,
+    this.role,
+    this.alien,
+    this.alienOnLeft = false,
     required this.child,
   });
 
@@ -268,6 +278,49 @@ class _FloatingIslandWidgetState extends State<FloatingIslandWidget>
                         ),
                 ),
               ),
+
+              // 3b. 3D Architecture Structure (Castle, Alien, Spire, Gateway)
+              if ((widget.role == IslandRole.citadelCastle || (widget.role == null && widget.isMilestone)))
+                Positioned(
+                  top: -28 + floatOffset,
+                  child: CitadelCastleStructure(
+                    biome: widget.biome,
+                    width: widget.width * 0.72,
+                    height: 52,
+                  ),
+                )
+              else if (widget.role == IslandRole.crystalSpire)
+                Positioned(
+                  top: -22 + floatOffset,
+                  child: CrystalSpireStructure(
+                    biome: widget.biome,
+                    width: widget.width * 0.55,
+                    height: 44,
+                  ),
+                )
+              else if (widget.role == IslandRole.realmGateway)
+                Positioned(
+                  top: -16 + floatOffset,
+                  child: RealmGatewayStructure(
+                    biome: widget.biome,
+                    size: 50,
+                  ),
+                ),
+
+              // 3c. Living Alien Companion (Perched cheerfully on Sanctuary island)
+              if (widget.role == IslandRole.alienSanctuary && widget.alien != null)
+                Positioned(
+                  key: ValueKey('alien_pos_${widget.alien!.id}'),
+                  left: widget.alienOnLeft ? -6 : null,
+                  right: widget.alienOnLeft ? null : -6,
+                  top: (widget.height * 0.04) + floatOffset,
+                  child: AlienCompanionWidget(
+                    key: ValueKey('alien_comp_${widget.alien!.id}'),
+                    alien: widget.alien!,
+                    size: 44,
+                    bubbleOnLeft: widget.alienOnLeft,
+                  ),
+                ),
 
               // 4. Pulsing Ancient Rune Dais Glow (Beneath level button on stone circle)
               if (widget.isCurrent)

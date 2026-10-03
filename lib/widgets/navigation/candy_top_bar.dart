@@ -6,9 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/game_state_service.dart';
 import '../../services/haptic_service.dart';
-import '../buttons/tactile_button.dart';
 import '../characters/observer_avatar_badge.dart';
-import '../modals/daily_quests_modal.dart';
 import '../modals/daily_rewards_modal.dart';
 import '../modals/lives_refill_modal.dart';
 
@@ -61,279 +59,253 @@ class CandyTopBar extends ConsumerWidget {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // ──── 1. 3D MAIL BUTTON (Daily Quests & Transmissions) ────
-              TactileButton.circle(
-                size: 36,
-                faceColorTop: const Color(0xFF252E4C),
-                faceColorBottom: const Color(0xFF13182B),
-                rimColor: const Color(0xFF080C18),
-                onTap: onMailTap ??
-                    () {
-                      triggerHaptic(ref, HapticService.lightTap);
-                      showDialog(
-                        context: context,
-                        builder: (context) => const DailyQuestsModal(),
-                      );
-                    },
-                child: const Icon(
-                  Icons.mail_rounded,
-                  color: AppColors.cyan,
-                  size: 20,
-                ),
-              ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isVeryCompact = constraints.maxWidth < 360;
 
-              const SizedBox(width: 4),
-
-              // ──── 2. 3D STREAK FLAME PILL ────
-              _TactilePill(
-                onTap: onStreakTap ?? onLivesTap ??
-                    () {
-                      triggerHaptic(ref, HapticService.lightTap);
-                      showDialog(
-                        context: context,
-                        builder: (context) => const DailyRewardsModal(),
-                      );
-                    },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 3D Flame circle
-                    Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF9100), Color(0xFFFF3D00)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF6D00).withValues(alpha: 0.6),
-                            blurRadius: 6,
-                            offset: const Offset(0, 1),
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  // ──── 1. LEFT SIDE: 3D LIVES [❤️ 5] & 3D STREAK [🔥] ────
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 3D Lives / Hearts Pill
+                        _TactilePill(
+                          onTap: onLivesTap ??
+                              () {
+                                triggerHaptic(ref, HapticService.lightTap);
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => const LivesRefillModal(),
+                                );
+                              },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFFF3366), Color(0xFFC2185B)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFF3366).withValues(alpha: 0.5),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Text('❤️', style: TextStyle(fontSize: 11)),
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '${player.currentLives}',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.local_fire_department_rounded,
-                          color: Colors.white,
-                          size: 16,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${player.currentStreak}d',
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: 0.5,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            offset: const Offset(0, 1),
-                            blurRadius: 2,
+
+                        const SizedBox(width: 5),
+
+                        // 3D Streak Flame Pill
+                        _TactilePill(
+                          onTap: onStreakTap ??
+                              () {
+                                triggerHaptic(ref, HapticService.lightTap);
+                                showDialog(
+                                  context: context,
+                                  builder: (context) => const DailyRewardsModal(),
+                                );
+                              },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 22,
+                                height: 22,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFFF9100), Color(0xFFFF3D00)],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFF6D00).withValues(alpha: 0.6),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.local_fire_department_rounded,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                              if (!isVeryCompact) ...[
+                                const SizedBox(width: 5),
+                                Text(
+                                  player.currentStreak > 0 ? '${player.currentStreak}d' : 'START',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: player.currentStreak > 0 ? 12.5 : 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: player.currentStreak > 0 ? AppColors.textPrimary : const Color(0xFFFFB74D),
+                                    letterSpacing: 0.5,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withValues(alpha: 0.6),
+                                        offset: const Offset(0, 1),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 4),
-
-              // ──── 3. 3D CENTER AVATAR BEZEL ────
-              _TactileAvatarBezel(
-                level: player.level,
-                avatarId: player.selectedAvatarId,
-                frameId: player.selectedFrameId,
-                onTap: () {
-                  triggerHaptic(ref, HapticService.mediumTap);
-                  context.go('/profile');
-                },
-              ),
-
-              const SizedBox(width: 4),
-
-              // ──── 4. 3D LIVES / HEARTS PILL ────
-              _TactilePill(
-                onTap: onLivesTap ??
-                    () {
-                      triggerHaptic(ref, HapticService.lightTap);
-                      showDialog(
-                        context: context,
-                        builder: (context) => const LivesRefillModal(),
-                      );
-                    },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF3366), Color(0xFFC2185B)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF3366).withValues(alpha: 0.5),
-                            blurRadius: 6,
-                            offset: const Offset(0, 1),
+                      ],
+                    ),
+                  ),
+
+                  // ──── 2. DEAD CENTER: 3D PROFILE AVATAR BEZEL ────
+                  Align(
+                    alignment: Alignment.center,
+                    child: _TactileAvatarBezel(
+                      level: player.level,
+                      avatarId: player.selectedAvatarId,
+                      frameId: player.selectedFrameId,
+                      onTap: () {
+                        triggerHaptic(ref, HapticService.mediumTap);
+                        context.go('/profile');
+                      },
+                    ),
+                  ),
+
+              // ──── 3. RIGHT SIDE: 3D GEMS PILL [💎 568 (+)] ────
+              Align(
+                alignment: Alignment.centerRight,
+                child: _TactilePill(
+                  onTap: onGemsTap ??
+                      () {
+                        triggerHaptic(ref, HapticService.lightTap);
+                        context.push('/collect');
+                      },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Gem icon
+                      Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                           ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text('❤️', style: TextStyle(fontSize: 11)),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${player.currentLives}',
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 4),
-
-              // ──── 5. 3D GEMS PILL ────
-              _TactilePill(
-                onTap: onGemsTap ??
-                    () {
-                      triggerHaptic(ref, HapticService.lightTap);
-                      context.push('/collect');
-                    },
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Gem icon
-                    Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.gemCyan.withValues(alpha: 0.4),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.gemCyan.withValues(alpha: 0.4),
-                            blurRadius: 6,
-                            offset: const Offset(0, 1),
+                        child: const Center(
+                          child: Icon(
+                            Icons.diamond_rounded,
+                            color: AppColors.gemCyan,
+                            size: 14,
                           ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.diamond_rounded,
-                          color: AppColors.gemCyan,
-                          size: 14,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '${player.gems}',
-                      style: GoogleFonts.outfit(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                        letterSpacing: 0.5,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withValues(alpha: 0.6),
-                            offset: const Offset(0, 1),
-                            blurRadius: 2,
+                      const SizedBox(width: 6),
+                      Text(
+                        '${player.gems}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          letterSpacing: 0.5,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              offset: const Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // 3D Mini Plus button
+                      Container(
+                        width: 18,
+                        height: 18,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [AppColors.stellarGreenLight, AppColors.stellarGreenDark],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    // 3D Mini Plus button
-                    Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [AppColors.stellarGreenLight, AppColors.stellarGreenDark],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.5),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.stellarGreenRim.withValues(alpha: 0.8),
-                            offset: const Offset(0, 1.5),
-                            blurRadius: 0,
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.5),
+                            width: 1.0,
                           ),
-                          BoxShadow(
-                            color: AppColors.stellarGreen.withValues(alpha: 0.4),
-                            blurRadius: 4,
-                            offset: const Offset(0, 1),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.stellarGreenRim.withValues(alpha: 0.8),
+                              offset: const Offset(0, 1.5),
+                              blurRadius: 0,
+                            ),
+                            BoxShadow(
+                              color: AppColors.stellarGreen.withValues(alpha: 0.4),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        child: const Center(
+                          child: Icon(
+                            Icons.add_rounded,
+                            color: Colors.white,
+                            size: 13,
                           ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.add_rounded,
-                          color: Colors.white,
-                          size: 13,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 4),
-
-              // ──── 5. 3D SETTINGS BUTTON ────
-              TactileButton.circle(
-                size: 36,
-                faceColorTop: const Color(0xFF252E4C),
-                faceColorBottom: const Color(0xFF13182B),
-                rimColor: const Color(0xFF080C18),
-                onTap: onSettingsTap ??
-                    () {
-                      triggerHaptic(ref, HapticService.mediumTap);
-                      context.go('/profile');
-                    },
-                child: const Icon(
-                  Icons.settings_rounded,
-                  color: AppColors.textSecondary,
-                  size: 20,
+                    ],
+                  ),
                 ),
               ),
             ],
-          ),
-        ),
+          );
+        },
       ),
-    );
+    ),
+  ),
+);
   }
 }
 

@@ -86,11 +86,10 @@ void main() {
       );
 
       expect(find.byType(CandyTopBar), findsOneWidget);
-      expect(find.byIcon(Icons.mail_rounded), findsOneWidget);
+      expect(find.text('❤️'), findsOneWidget);
       expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
       expect(find.byIcon(Icons.diamond_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.settings_rounded), findsOneWidget);
-      expect(find.text('0d'), findsOneWidget);
+      expect(find.text('START'), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 100));
     });
