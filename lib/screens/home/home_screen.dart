@@ -13,7 +13,11 @@ import '../../widgets/characters/tactile_nova_companion.dart';
 import '../../widgets/modals/daily_quests_modal.dart';
 import '../../widgets/modals/daily_rewards_modal.dart';
 import '../../widgets/modals/relics_modal.dart';
+import '../../widgets/modals/lucky_spin_modal.dart';
+import '../../widgets/modals/lives_refill_modal.dart';
+import '../../models/player_state.dart';
 import '../../widgets/particles/particles.dart';
+import '../../widgets/particles/stardust_finger_trail.dart';
 
 /// Home / Welcome Screen — BLINK Cosmic Identity
 /// Features:
@@ -41,6 +45,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
   void initState() {
     super.initState();
     AudioService().startAmbientMusic();
+    Future.microtask(() {
+      ref.read(gameStateProvider.notifier).syncLives();
+    });
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2800),
@@ -97,10 +104,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     AppReviewShareService.showRateDialog(context);
   }
 
-  void _shareApp() {
+  void _openShareApp() {
     triggerHaptic(ref, HapticService.lightTap);
     final player = ref.read(gameStateProvider);
     AppReviewShareService.shareApp(player: player);
+  }
+
+  void _openLuckySpin() {
+    triggerHaptic(ref, HapticService.mediumTap);
+    showDialog(
+      context: context,
+      builder: (context) => const LuckySpinModal(),
+    );
+  }
+
+  void _openLivesRefill() {
+    triggerHaptic(ref, HapticService.mediumTap);
+    showDialog(
+      context: context,
+      builder: (context) => const LivesRefillModal(),
+    );
   }
 
   @override
@@ -122,9 +145,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
             child: StarField(starCount: 45),
           ),
 
-          // ──── 3. CENTERED CONTENT ────
+          // ──── 3. CENTERED CONTENT WITH STARDUST FINGER TRAIL ────
           SafeArea(
-            child: LayoutBuilder(
+            child: StardustFingerTrail(
+              child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -135,90 +159,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                         children: [
                           // Top status pills
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // 3D Tactile Daily Streak Flame Pill (matches CandyTopBar)
-                                _buildStreakPill(
-                                  streakDays: player.currentStreak,
-                                  hasReward: hasReward,
-                                  onTap: _openDailyRewards,
-                                ),
-
-                                // Top Right Actions: Share, Rate, Gift, Gems
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _buildIconPill(
-                                      icon: Icons.share_rounded,
-                                      iconColor: AppColors.cyan,
-                                      tooltip: 'Share BLINK',
-                                      onTap: _shareApp,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    _buildIconPill(
-                                      icon: Icons.star_rounded,
-                                      iconColor: const Color(0xFFFFD700),
-                                      tooltip: 'Rate BLINK (+50 Gems)',
-                                      onTap: _openRateModal,
-                                    ),
-                                    const SizedBox(width: 6),
-
-                                    // Daily Gift Chip (If ready)
-                                    if (hasReward) ...[
-                                      GestureDetector(
-                                        onTap: _openDailyRewards,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [Color(0xFF00E5FF), Color(0xFF8B5CF6)],
-                                            ),
-                                            borderRadius: BorderRadius.circular(20),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppColors.cyan.withValues(alpha: 0.6),
-                                                blurRadius: 10,
-                                                spreadRadius: 1,
-                                              ),
-                                            ],
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            child: SizedBox(
+                              width: constraints.maxWidth - 28,
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: SizedBox(
+                                  width: (constraints.maxWidth - 28).clamp(420.0, 1200.0),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      // Left Group: Streak Flame + Lives Pill
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _buildStreakPill(
+                                            streakDays: player.currentStreak,
+                                            hasReward: hasReward,
+                                            onTap: _openDailyRewards,
                                           ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 15),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                'GIFT',
-                                                style: GoogleFonts.outfit(
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w900,
-                                                  color: Colors.white,
-                                                  letterSpacing: 0.8,
-                                                ),
-                                              ),
-                                            ],
+                                          const SizedBox(width: 8),
+                                          _buildLivesPill(
+                                            lives: player.currentLives,
+                                            onTap: _openLivesRefill,
                                           ),
-                                        ),
+                                        ],
                                       ),
-                                      const SizedBox(width: 6),
-                                    ],
 
-                                    // Gems Pill (routes to Shop / Collectibles Vault)
-                                    _buildGlassPill(
-                                      icon: Icons.diamond_rounded,
-                                      iconColor: AppColors.gemCyan,
-                                      label: '${player.gems}',
-                                      glowColor: AppColors.gemCyan,
-                                      onTap: () {
-                                        triggerHaptic(ref, HapticService.lightTap);
-                                        context.push('/collect');
-                                      },
-                                    ),
-                                  ],
+                                      // Right Group: Lucky Spin + Gems
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          _buildSpinPill(
+                                            isFree: player.isLuckySpinAvailable,
+                                            onTap: _openLuckySpin,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          _buildGlassPill(
+                                            icon: Icons.diamond_rounded,
+                                            iconColor: AppColors.gemCyan,
+                                            label: '${player.gems}',
+                                            glowColor: AppColors.gemCyan,
+                                            onTap: () {
+                                              triggerHaptic(ref, HapticService.lightTap);
+                                              context.push('/collect');
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ],
+                              ),
                             ),
                           ),
 
@@ -376,6 +368,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                         width: double.infinity,
                         onTap: () {
                           triggerHaptic(ref, HapticService.mediumTap);
+                          ref.read(gameStateProvider.notifier).syncLives();
+                          final p = ref.read(gameStateProvider);
+                          if (p.currentLives <= 0) {
+                            _openLivesRefill();
+                            return;
+                          }
                           ref.read(gameStateProvider.notifier).setCalmMode(false);
                           context.push('/play');
                         },
@@ -459,130 +457,167 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
 
                       const SizedBox(height: 16),
 
-                      // Bottom Utility Row: Settings, Daily Missions, Events
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Settings circle
-                          TactileButton.circle(
-                            size: 48,
-                            faceColorTop: AppColors.surfaceLight,
-                            faceColorBottom: const Color(0xFF0F1328),
-                            rimColor: const Color(0xFF080C18),
-                            onTap: () {
-                              triggerHaptic(ref, HapticService.lightTap);
-                              context.go('/profile');
-                            },
-                            child: const Icon(
-                              Icons.settings_rounded,
-                              color: AppColors.textSecondary,
-                              size: 22,
-                            ),
-                          ),
-
-                          // Daily Missions Button
-                          GestureDetector(
-                            onTap: _openDailyQuests,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF161E34),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFF2E3E66)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.3),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
+                      // Bottom Utility Row: Settings, Daily Missions, Relics, Daily Shift, Share, Rate
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Settings circle
+                            TactileButton.circle(
+                              size: 44,
+                              faceColorTop: AppColors.surfaceLight,
+                              faceColorBottom: const Color(0xFF0F1328),
+                              rimColor: const Color(0xFF080C18),
+                              onTap: () {
+                                triggerHaptic(ref, HapticService.lightTap);
+                                context.go('/profile');
+                              },
+                              child: const Icon(
+                                Icons.settings_rounded,
+                                color: AppColors.textSecondary,
+                                size: 20,
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.military_tech_rounded,
-                                    color: AppColors.gold,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Missions',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Daily Missions Button
+                            GestureDetector(
+                              onTap: _openDailyQuests,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF161E34),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFF2E3E66)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.3),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          // Constellation Codex / Relics Button
-                          GestureDetector(
-                            onTap: _openRelics,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF161E34),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.55)),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFFFFD700).withValues(alpha: 0.20),
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(
-                                    Icons.auto_awesome_rounded,
-                                    color: Color(0xFFFFD700),
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: 5),
-                                  Text(
-                                    'Relics',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.military_tech_rounded,
+                                      color: AppColors.gold,
+                                      size: 17,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Missions',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 8),
 
-                          // Daily Events circle
-                          TactileButton.circle(
-                            size: 48,
-                            faceColorTop: player.isDailyShiftCompletedToday
-                                ? const Color(0xFF00E676)
-                                : AppColors.novaOrangeLight,
-                            faceColorBottom: player.isDailyShiftCompletedToday
-                                ? const Color(0xFF00A854)
-                                : AppColors.novaOrangeDark,
-                            rimColor: player.isDailyShiftCompletedToday
-                                ? const Color(0xFF00753A)
-                                : AppColors.novaOrangeRim,
-                            onTap: () {
-                              triggerHaptic(ref, HapticService.lightTap);
-                              context.push('/daily-shift');
-                            },
-                            child: Icon(
-                              player.isDailyShiftCompletedToday
-                                  ? Icons.check_circle_rounded
-                                  : Icons.today_rounded,
-                              color: Colors.white,
-                              size: 22,
+                            // Constellation Codex / Relics Button
+                            GestureDetector(
+                              onTap: _openRelics,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF161E34),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFFFFD700).withValues(alpha: 0.55)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFFFD700).withValues(alpha: 0.20),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.auto_awesome_rounded,
+                                      color: Color(0xFFFFD700),
+                                      size: 15,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Relics',
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+
+                            // Daily Events circle
+                            TactileButton.circle(
+                              size: 44,
+                              faceColorTop: player.isDailyShiftCompletedToday
+                                  ? const Color(0xFF00E676)
+                                  : AppColors.novaOrangeLight,
+                              faceColorBottom: player.isDailyShiftCompletedToday
+                                  ? const Color(0xFF00A854)
+                                  : AppColors.novaOrangeDark,
+                              rimColor: player.isDailyShiftCompletedToday
+                                  ? const Color(0xFF00753A)
+                                  : AppColors.novaOrangeRim,
+                              onTap: () {
+                                triggerHaptic(ref, HapticService.lightTap);
+                                context.push('/daily-shift');
+                              },
+                              child: Icon(
+                                player.isDailyShiftCompletedToday
+                                    ? Icons.check_circle_rounded
+                                    : Icons.today_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Share button
+                            TactileButton.circle(
+                              size: 44,
+                              faceColorTop: const Color(0xFF00E5FF),
+                              faceColorBottom: const Color(0xFF0097A7),
+                              rimColor: const Color(0xFF006064),
+                              onTap: _openShareApp,
+                              child: const Icon(
+                                Icons.share_rounded,
+                                color: Colors.white,
+                                size: 18,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+
+                            // Rate button (+50 Gems)
+                            TactileButton.circle(
+                              size: 44,
+                              faceColorTop: const Color(0xFFFFD700),
+                              faceColorBottom: const Color(0xFFFFA000),
+                              rimColor: const Color(0xFFFF6F00),
+                              onTap: _openRateModal,
+                              child: const Icon(
+                                Icons.star_rounded,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -597,8 +632,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
               },
             ),
           ),
-        ],
-      ),
+        ),
+      ],
+    ),
     );
   }
 
@@ -615,13 +651,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
           color: AppColors.glassWhite,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: hasReward ? const Color(0xFFFF9100).withValues(alpha: 0.6) : AppColors.glassBorder,
+            color: hasReward ? const Color(0xFFFF9100).withValues(alpha: 0.8) : AppColors.glassBorder,
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF6D00).withValues(alpha: hasReward ? 0.35 : 0.15),
-              blurRadius: 8,
+              color: const Color(0xFFFF6D00).withValues(alpha: hasReward ? 0.4 : 0.15),
+              blurRadius: hasReward ? 10 : 8,
               offset: const Offset(0, 2),
             ),
           ],
@@ -666,6 +702,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
                 letterSpacing: 0.3,
               ),
             ),
+            if (hasReward) ...[
+              const SizedBox(width: 5),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF00E5FF), Color(0xFF7C4DFF)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00E5FF).withValues(alpha: 0.4),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 10),
+                    const SizedBox(width: 2),
+                    Text(
+                      'GIFT',
+                      style: GoogleFonts.outfit(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -714,33 +784,126 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with TickerProviderStat
     );
   }
 
-  Widget _buildIconPill({
-    required IconData icon,
-    required Color iconColor,
+
+
+  Widget _buildLivesPill({
+    required int lives,
     required VoidCallback onTap,
-    String? tooltip,
   }) {
-    return Tooltip(
-      message: tooltip ?? '',
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: AppColors.glassWhite,
-            shape: BoxShape.circle,
-            border: Border.all(color: AppColors.glassBorder, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: iconColor.withValues(alpha: 0.25),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    final isFull = lives >= PlayerState.maxLives;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.glassWhite,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: const Color(0xFFFF2A6D).withValues(alpha: 0.5),
+            width: 1.2,
           ),
-          child: Icon(icon, color: iconColor, size: 17),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF2A6D).withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFF3366), Color(0xFFC2185B)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFFF3366).withValues(alpha: 0.5),
+                    blurRadius: 6,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: const Center(
+                child: Text('❤️', style: TextStyle(fontSize: 11)),
+              ),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              isFull ? '$lives' : '$lives/5',
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+
+  Widget _buildSpinPill({
+    required bool isFree,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          gradient: isFree
+              ? const LinearGradient(
+                  colors: [Color(0xFF7000FF), Color(0xFF00E5FF)],
+                )
+              : null,
+          color: isFree ? null : AppColors.glassWhite,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(
+            color: isFree ? Colors.white : AppColors.glassBorder,
+            width: 1.2,
+          ),
+          boxShadow: isFree
+              ? [
+                  BoxShadow(
+                    color: AppColors.cyan.withValues(alpha: 0.5),
+                    blurRadius: 10,
+                    spreadRadius: 1,
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                  ),
+                ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🎰', style: TextStyle(fontSize: 13)),
+            const SizedBox(width: 4),
+            Text(
+              isFree ? 'SPIN' : 'WHEEL',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
 }

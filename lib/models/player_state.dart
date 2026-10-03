@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'booster_model.dart';
 
 /// Core player state — persisted locally
 class PlayerState extends Equatable {
@@ -43,6 +44,10 @@ class PlayerState extends Equatable {
   final int unlockedWorldLevel;
   final Map<int, int> levelStars;
   final DateTime? lastDailyShiftCompletedDate;
+  final BoosterInventory boosterInventory;
+  final DateTime? lastLuckySpinDate;
+  final int lives;
+  final DateTime? lastLifeLostTime;
 
   factory PlayerState.initial() => const PlayerState();
 
@@ -88,6 +93,10 @@ class PlayerState extends Equatable {
     this.unlockedWorldLevel = 1,
     this.levelStars = const {},
     this.lastDailyShiftCompletedDate,
+    this.boosterInventory = const BoosterInventory(),
+    this.lastLuckySpinDate,
+    this.lives = 5,
+    this.lastLifeLostTime,
   });
 
   /// Check if the 7-day reward is claimable today
@@ -110,6 +119,39 @@ class PlayerState extends Equatable {
     return now.year == lastDailyShiftCompletedDate!.year &&
         now.month == lastDailyShiftCompletedDate!.month &&
         now.day == lastDailyShiftCompletedDate!.day;
+  }
+
+  /// Check if daily Lucky Spin is available today
+  bool get isLuckySpinAvailable {
+    if (lastLuckySpinDate == null) return true;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final last = DateTime(
+      lastLuckySpinDate!.year,
+      lastLuckySpinDate!.month,
+      lastLuckySpinDate!.day,
+    );
+    return today.isAfter(last);
+  }
+
+  static const int maxLives = 5;
+  static const int lifeRegenMinutes = 20;
+
+  /// Effective lives taking into account auto-regeneration (1 heart per 20 minutes)
+  int get currentLives {
+    if (lives >= maxLives || lastLifeLostTime == null) return lives;
+    final minutesElapsed = DateTime.now().difference(lastLifeLostTime!).inMinutes;
+    final regenerated = minutesElapsed ~/ lifeRegenMinutes;
+    return (lives + regenerated).clamp(0, maxLives);
+  }
+
+  /// Minutes and seconds remaining until next heart regenerates
+  Duration? get timeUntilNextLife {
+    if (lives >= maxLives || lastLifeLostTime == null) return null;
+    final elapsedSec = DateTime.now().difference(lastLifeLostTime!).inSeconds;
+    final totalCycleSec = lifeRegenMinutes * 60;
+    final remainderSec = totalCycleSec - (elapsedSec % totalCycleSec);
+    return Duration(seconds: remainderSec);
   }
 
   PlayerState copyWith({
@@ -154,6 +196,10 @@ class PlayerState extends Equatable {
     int? unlockedWorldLevel,
     Map<int, int>? levelStars,
     DateTime? lastDailyShiftCompletedDate,
+    BoosterInventory? boosterInventory,
+    DateTime? lastLuckySpinDate,
+    int? lives,
+    DateTime? lastLifeLostTime,
   }) {
     return PlayerState(
       displayName: displayName ?? this.displayName,
@@ -197,6 +243,10 @@ class PlayerState extends Equatable {
       unlockedWorldLevel: unlockedWorldLevel ?? this.unlockedWorldLevel,
       levelStars: levelStars ?? this.levelStars,
       lastDailyShiftCompletedDate: lastDailyShiftCompletedDate ?? this.lastDailyShiftCompletedDate,
+      boosterInventory: boosterInventory ?? this.boosterInventory,
+      lastLuckySpinDate: lastLuckySpinDate ?? this.lastLuckySpinDate,
+      lives: lives ?? this.lives,
+      lastLifeLostTime: lastLifeLostTime ?? this.lastLifeLostTime,
     );
   }
 
@@ -223,6 +273,7 @@ class PlayerState extends Equatable {
         todayShiftsPlayed, todayBestCombo, isCalmMode,
         unlockedCollectibleIds, equippedCollectibleId, unlockedWorldLevel,
         levelStars, lastDailyShiftCompletedDate,
+        boosterInventory, lastLuckySpinDate, lives, lastLifeLostTime,
       ];
 }
 

@@ -223,6 +223,32 @@ class TactileButton extends StatefulWidget {
     );
   }
 
+  /// Mystery Portal 3D Button — Cryptic Void Violet with glowing specular sheen
+  factory TactileButton.portal({
+    Key? key,
+    required String label,
+    required VoidCallback onTap,
+    double? width,
+    double height = 48,
+    IconData? icon = Icons.auto_awesome_rounded,
+    double fontSize = 13,
+  }) {
+    return TactileButton(
+      key: key,
+      label: label,
+      onTap: onTap,
+      width: width,
+      height: height,
+      faceColorTop: const Color(0xFF9D4EDD),
+      faceColorBottom: const Color(0xFF5A189A),
+      rimColor: const Color(0xFF240046),
+      textColor: Colors.white,
+      icon: icon,
+      fontSize: fontSize,
+      borderRadius: height / 2,
+    );
+  }
+
   /// Circular 3D button for icons (Settings, Close, etc.)
   factory TactileButton.circle({
     Key? key,
@@ -445,50 +471,56 @@ class _TactileButtonState extends State<TactileButton> with TickerProviderStateM
 
                           // Inner Content (Label / Icon / Custom child)
                           Center(
-                            child: widget.child ??
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (widget.icon != null) ...[
-                                      Icon(
-                                        widget.icon,
-                                        color: widget.textColor,
-                                        size: widget.fontSize * 1.15,
-                                        shadows: [
-                                          Shadow(
-                                            color: widget.rimColor.withValues(alpha: 0.8),
-                                            offset: const Offset(0, 2),
-                                            blurRadius: 3,
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: widget.isRound ? 2 : 8),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: widget.child ??
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        if (widget.icon != null) ...[
+                                          Icon(
+                                            widget.icon,
+                                            color: widget.textColor,
+                                            size: widget.fontSize * 1.15,
+                                            shadows: [
+                                              Shadow(
+                                                color: widget.rimColor.withValues(alpha: 0.8),
+                                                offset: const Offset(0, 2),
+                                                blurRadius: 3,
+                                              ),
+                                            ],
                                           ),
+                                          const SizedBox(width: 8),
                                         ],
-                                      ),
-                                      const SizedBox(width: 8),
-                                    ],
-                                    if (widget.label != null)
-                                      Text(
-                                        widget.label!,
-                                        style: GoogleFonts.outfit(
-                                          fontSize: widget.fontSize,
-                                          fontWeight: FontWeight.w800,
-                                          color: widget.textColor,
-                                          letterSpacing: 1.2,
-                                          shadows: [
-                                            Shadow(
-                                              color: widget.rimColor.withValues(alpha: 0.95),
-                                              offset: const Offset(0, 2.2),
-                                              blurRadius: 3,
+                                        if (widget.label != null)
+                                          Text(
+                                            widget.label!,
+                                            style: GoogleFonts.outfit(
+                                              fontSize: widget.fontSize,
+                                              fontWeight: FontWeight.w800,
+                                              color: widget.textColor,
+                                              letterSpacing: 1.2,
+                                              shadows: [
+                                                Shadow(
+                                                  color: widget.rimColor.withValues(alpha: 0.95),
+                                                  offset: const Offset(0, 2.2),
+                                                  blurRadius: 3,
+                                                ),
+                                                Shadow(
+                                                  color: Colors.black.withValues(alpha: 0.35),
+                                                  offset: const Offset(0, 3.5),
+                                                  blurRadius: 4,
+                                                ),
+                                              ],
                                             ),
-                                            Shadow(
-                                              color: Colors.black.withValues(alpha: 0.35),
-                                              offset: const Offset(0, 3.5),
-                                              blurRadius: 4,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                          ),
+                                      ],
+                                    ),
+                              ),
+                            ),
                           ),
                         ],
                       ),

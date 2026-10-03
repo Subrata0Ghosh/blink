@@ -1,7 +1,10 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/player_state.dart';
+import '../models/booster_model.dart';
+import '../models/lucky_spin_model.dart';
 import 'audio_service.dart';
 
 /// Provider for SharedPreferences instance. Overridden in main.dart.
@@ -92,6 +95,7 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
     final unlockedCollectibles = prefs.getStringList('unlockedCollectibleIds') ?? <String>['shift_gem'];
     final equippedCollectible = prefs.getString('equippedCollectibleId') ?? 'shift_gem';
     final unlockedWorldLevel = prefs.getInt('unlockedWorldLevel') ?? 1;
+    final boosterInventory = BoosterInventory.decode(prefs.getString('boosterInventory'));
 
     final levelStars = <int, int>{};
     final levelStarsStr = prefs.getString('levelStars');
@@ -104,6 +108,29 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
           if (k != null && v != null) {
             levelStars[k] = v;
           }
+        }
+      }
+    }
+
+    final lastLuckySpinStr = prefs.getString('lastLuckySpinDate');
+    final lastLuckySpinDate = lastLuckySpinStr != null ? DateTime.tryParse(lastLuckySpinStr) : null;
+
+    final livesRaw = prefs.getInt('lives') ?? 5;
+    final lastLifeLostStr = prefs.getString('lastLifeLostTime');
+    final lastLifeLostTime = lastLifeLostStr != null ? DateTime.tryParse(lastLifeLostStr) : null;
+
+    // Evaluate auto-regenerated hearts
+    int computedLives = livesRaw;
+    DateTime? adjustedLifeLostTime = lastLifeLostTime;
+    if (computedLives < PlayerState.maxLives && lastLifeLostTime != null) {
+      final elapsedMin = DateTime.now().difference(lastLifeLostTime).inMinutes;
+      final regen = elapsedMin ~/ PlayerState.lifeRegenMinutes;
+      if (regen > 0) {
+        computedLives = (computedLives + regen).clamp(0, PlayerState.maxLives);
+        if (computedLives >= PlayerState.maxLives) {
+          adjustedLifeLostTime = null;
+        } else {
+          adjustedLifeLostTime = lastLifeLostTime.add(Duration(minutes: regen * PlayerState.lifeRegenMinutes));
         }
       }
     }
@@ -150,6 +177,10 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
       unlockedWorldLevel: unlockedWorldLevel,
       levelStars: levelStars,
       lastDailyShiftCompletedDate: lastDailyShiftDate,
+      boosterInventory: boosterInventory,
+      lastLuckySpinDate: lastLuckySpinDate,
+      lives: computedLives,
+      lastLifeLostTime: adjustedLifeLostTime,
     );
   }
 
@@ -231,6 +262,14 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
           prefs.setString('levelStars', levelStarsEncoded),
           if (currentState.lastDailyShiftCompletedDate != null)
             prefs.setString('lastDailyShiftCompletedDate', currentState.lastDailyShiftCompletedDate!.toIso8601String()),
+          prefs.setString('boosterInventory', currentState.boosterInventory.encode()),
+          if (currentState.lastLuckySpinDate != null)
+            prefs.setString('lastLuckySpinDate', currentState.lastLuckySpinDate!.toIso8601String()),
+          prefs.setInt('lives', currentState.lives),
+          if (currentState.lastLifeLostTime != null)
+            prefs.setString('lastLifeLostTime', currentState.lastLifeLostTime!.toIso8601String())
+          else
+            prefs.remove('lastLifeLostTime'),
         ]);
       } while (_hasPendingSave);
     } catch (e, st) {
@@ -631,6 +670,142 @@ class GameStateNotifier extends StateNotifier<PlayerState> {
   void setCalmMode(bool enabled) {
     state = state.copyWith(isCalmMode: enabled);
     _saveState();
+  }
+
+  // ──────────── BOOSTER SYSTEM ────────────
+
+  /// Purchase a booster with gems
+  Future<bool> purchaseBooster(BoosterType type) async {
+    final booster = Booster.fromType(type);
+    if (state.gems < booster.gemCost) return false;
+    state = state.copyWith(
+      gems: state.gems - booster.gemCost,
+      boosterInventory: state.boosterInventory.add(type),
+    );
+    await _saveState();
+    return true;
+  }
+
+  /// Consume one booster from inventory (called when a session starts with boosters)
+  void consumeBooster(BoosterType type) {
+    if (!state.boosterInventory.has(type)) return;
+    state = state.copyWith(
+      boosterInventory: state.boosterInventory.use(type),
+    );
+    _saveState();
+  }
+
+  /// Consume multiple boosters at once (called when starting a session with selected boosters)
+  void consumeBoosters(Set<BoosterType> types) {
+    var inventory = state.boosterInventory;
+    for (final type in types) {
+      if (inventory.has(type)) {
+        inventory = inventory.use(type);
+      }
+    }
+    state = state.copyWith(boosterInventory: inventory);
+    _saveState();
+  }
+
+  /// Award free boosters (from chests, achievements, daily rewards)
+  Future<void> awardBooster(BoosterType type, [int amount = 1]) async {
+    state = state.copyWith(
+      boosterInventory: state.boosterInventory.add(type, amount),
+    );
+    await _saveState();
+  }
+
+  // ──────────── LUCKY SPIN SYSTEM ────────────
+
+  /// Spin the Lucky Wheel. Returns the selected prize.
+  /// If [useGems] is true, checks for 30 gems and deducts them.
+  /// Otherwise marks today's free spin as used.
+  Future<LuckySpinPrize?> spinLuckyWheel({bool useGems = false}) async {
+    if (useGems) {
+      if (state.gems < 30) return null;
+      state = state.copyWith(gems: state.gems - 30);
+    } else {
+      if (!state.isLuckySpinAvailable) return null;
+      state = state.copyWith(lastLuckySpinDate: DateTime.now());
+    }
+
+    // Weighted random selection
+    final totalWeight = LuckySpinPrize.prizes.fold<int>(0, (sum, p) => sum + p.weight);
+    int randomWeight = Random().nextInt(totalWeight);
+    LuckySpinPrize selected = LuckySpinPrize.prizes.first;
+    for (final prize in LuckySpinPrize.prizes) {
+      randomWeight -= prize.weight;
+      if (randomWeight < 0) {
+        selected = prize;
+        break;
+      }
+    }
+
+    // Grant prize
+    if (selected.type == SpinPrizeType.gems) {
+      state = state.copyWith(gems: state.gems + selected.amount);
+    } else if (selected.type == SpinPrizeType.booster && selected.boosterType != null) {
+      state = state.copyWith(
+        boosterInventory: state.boosterInventory.add(selected.boosterType!, selected.amount),
+      );
+    }
+
+    await _saveState();
+    return selected;
+  }
+
+  // ──────────── LIVES / ENERGY SYSTEM ────────────
+
+  /// Sync auto-regenerated lives based on elapsed time
+  void syncLives() {
+    final current = state.currentLives;
+    if (current != state.lives) {
+      DateTime? newLostTime = state.lastLifeLostTime;
+      if (current >= PlayerState.maxLives) {
+        newLostTime = null;
+      }
+      state = state.copyWith(lives: current, lastLifeLostTime: newLostTime);
+      _saveState();
+    }
+  }
+
+  /// Consume 1 heart upon session failure / wrong answer
+  bool consumeLife() {
+    syncLives();
+    if (state.lives <= 0) return false;
+    final newLives = state.lives - 1;
+    final newLostTime = (state.lives == PlayerState.maxLives)
+        ? DateTime.now()
+        : (state.lastLifeLostTime ?? DateTime.now());
+    state = state.copyWith(
+      lives: newLives,
+      lastLifeLostTime: newLostTime,
+    );
+    _saveState();
+    return true;
+  }
+
+  /// Instant full refill with 50 gems
+  Future<bool> refillLivesWithGems() async {
+    const cost = 50;
+    if (state.gems < cost) return false;
+    state = state.copyWith(
+      gems: state.gems - cost,
+      lives: PlayerState.maxLives,
+      lastLifeLostTime: null,
+    );
+    await _saveState();
+    return true;
+  }
+
+  /// Add free lives (from rewards or ads)
+  Future<void> addLives([int count = 1]) async {
+    final newLives = (state.currentLives + count).clamp(0, PlayerState.maxLives);
+    state = state.copyWith(
+      lives: newLives,
+      lastLifeLostTime: newLives >= PlayerState.maxLives ? null : state.lastLifeLostTime,
+    );
+    await _saveState();
   }
 }
 

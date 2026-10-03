@@ -10,6 +10,7 @@ import '../buttons/tactile_button.dart';
 import '../characters/observer_avatar_badge.dart';
 import '../modals/daily_quests_modal.dart';
 import '../modals/daily_rewards_modal.dart';
+import '../modals/lives_refill_modal.dart';
 
 /// 3D Tactile Top Bar for BLINK
 /// Features:
@@ -163,7 +164,58 @@ class CandyTopBar extends ConsumerWidget {
 
               const SizedBox(width: 4),
 
-              // ──── 4. 3D GEMS PILL ────
+              // ──── 4. 3D LIVES / HEARTS PILL ────
+              _TactilePill(
+                onTap: onLivesTap ??
+                    () {
+                      triggerHaptic(ref, HapticService.lightTap);
+                      showDialog(
+                        context: context,
+                        builder: (context) => const LivesRefillModal(),
+                      );
+                    },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF3366), Color(0xFFC2185B)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF3366).withValues(alpha: 0.5),
+                            blurRadius: 6,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text('❤️', style: TextStyle(fontSize: 11)),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${player.currentLives}',
+                      style: GoogleFonts.outfit(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 4),
+
+              // ──── 5. 3D GEMS PILL ────
               _TactilePill(
                 onTap: onGemsTap ??
                     () {

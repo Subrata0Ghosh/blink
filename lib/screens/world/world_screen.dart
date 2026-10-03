@@ -338,57 +338,32 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
                   ),
                 ),
 
-                // Floating Mystery Portal Button
+                // 3D Tactile Mystery Portal Button
                 Positioned(
                   bottom: 16,
                   right: 16,
-                  child: GestureDetector(
+                  child: TactileButton.portal(
+                    label: 'MYSTERY PORTAL',
+                    width: 155,
+                    height: 44,
+                    fontSize: 12,
                     onTap: () {
                       triggerHaptic(ref, HapticService.mediumTap);
                       context.push('/mystery');
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF8A2BE2), Color(0xFF4A00E0)],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFD68BFF), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF8A2BE2).withValues(alpha: 0.5),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFD68BFF), size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'MYSTERY PORTAL',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 ),
 
-                // Floating Constellation Codex / Relics Button
+                // 3D Tactile Constellation Codex / Relics Button
                 Positioned(
                   bottom: 16,
                   left: 16,
-                  child: GestureDetector(
+                  child: TactileButton.solar(
+                    label: 'RELICS',
+                    icon: Icons.auto_awesome_rounded,
+                    width: 110,
+                    height: 44,
+                    fontSize: 12,
                     onTap: () {
                       triggerHaptic(ref, HapticService.mediumTap);
                       AudioService().playUiConfirm();
@@ -397,40 +372,6 @@ class _WorldScreenState extends ConsumerState<WorldScreen> with SingleTickerProv
                         builder: (_) => const RelicsModal(),
                       );
                     },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFB300), Color(0xFFFF6F00)],
-                        ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: const Color(0xFFFFD54F), width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF8F00).withValues(alpha: 0.5),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.auto_awesome_rounded, color: Color(0xFFFFF9C4), size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            'RELICS',
-                            style: GoogleFonts.outfit(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
                 ),
               ],

@@ -15,6 +15,9 @@ import '../../services/audio_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/buttons/tactile_option_button.dart';
 import '../../widgets/particles/particles.dart';
+import '../../widgets/particles/stardust_finger_trail.dart';
+import '../../gameplay/rendering/parallax_3d_arena.dart';
+import '../../widgets/animations/flying_reward_overlay.dart';
 
 /// Mystery Mode Screen — Section 40
 /// Cryptic cosmic shift with dark purple runes, hidden rules, and rare relic rewards.
@@ -92,7 +95,7 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
     });
 
     if (correct) {
-      AudioService().playCorrect();
+      AudioService().playMysteryStinger();
       triggerHaptic(ref, HapticService.perfectAnswer);
       ref.read(gameStateProvider.notifier).processChallengeResult(
         correct: true,
@@ -104,7 +107,18 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
       ref.read(gameStateProvider.notifier).unlockCollectible('shadow_pyramid', 0);
       ref.read(gameStateProvider.notifier).addGems(30);
 
-      _victoryTimer = Timer(const Duration(milliseconds: 700), () {
+      // Flying void gems connecting answer to top bar
+      final screenSize = MediaQuery.of(context).size;
+      FlyingRewardOverlay.show(
+        context: context,
+        startPosition: Offset(screenSize.width * 0.5, screenSize.height * 0.72),
+        targetPosition: Offset(screenSize.width * 0.82, 45.0),
+        count: 10,
+        emoji: '🔮',
+        color: const Color(0xFFD68BFF),
+      );
+
+      _victoryTimer = Timer(const Duration(milliseconds: 900), () {
         if (mounted) {
           AudioService().playChestOpen();
           setState(() => _showVictory = true);
@@ -190,9 +204,12 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
             ),
           ),
 
-          SafeArea(
-            child: Column(
-              children: [
+          StardustFingerTrail(
+            primaryColor: const Color(0xFFD68BFF),
+            secondaryColor: const Color(0xFF8A2BE2),
+            child: SafeArea(
+              child: Column(
+                children: [
                 // ──── TOP BAR ────
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -272,13 +289,14 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                   ),
                 ),
 
-                // Arena Scene
+                // Arena Scene with 2.5D perspective tilt
                 Expanded(
-                  child: ArenaSurface(
-                    enableBreathing: _isObserving,
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final scene = _challenge!.originalScene;
+                  child: Parallax3dArena(
+                    child: ArenaSurface(
+                      enableBreathing: _isObserving,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final scene = _challenge!.originalScene;
 
                         return Stack(
                           children: scene.asMap().entries.map((entry) {
@@ -304,19 +322,36 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                     ),
                   ),
                 ),
+              ),
 
-                // Question & Answers
+                // Question & Answers in Cosmic Glass Card
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                   child: Column(
                     children: [
-                      Text(
-                        _challenge!.question,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.outfit(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFD68BFF).withValues(alpha: 0.4), width: 1.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF8A2BE2).withValues(alpha: 0.15),
+                              blurRadius: 16,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          _challenge!.question,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -344,6 +379,7 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
               ],
             ),
           ),
+        ),
 
           // Victory Celebration Modal
           if (_showVictory)
@@ -396,7 +432,7 @@ class _MysteryScreenState extends ConsumerState<MysteryScreen>
                         ),
                       ),
                       const SizedBox(height: 28),
-                      TactileButton.nebula(
+                      TactileButton.portal(
                         label: 'CLAIM REWARD',
                         width: 220,
                         height: 54,

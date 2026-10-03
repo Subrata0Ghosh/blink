@@ -21,6 +21,12 @@ import '../../services/haptic_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../widgets/animations/feedback_overlays.dart';
 import '../../widgets/animations/achievement_popup.dart';
+import '../../models/booster_model.dart';
+import '../../widgets/boosters/booster_selector.dart';
+import '../../widgets/boosters/active_booster_hud.dart';
+import '../../widgets/particles/stardust_finger_trail.dart';
+import '../../gameplay/rendering/parallax_3d_arena.dart';
+import '../../widgets/animations/flying_reward_overlay.dart';
 
 /// Play screen — The Core Gameplay Loop of BLINK
 /// Powered by:
@@ -49,10 +55,19 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
   int _correctCount = 0;
 
   // Phase management
-  _GamePhase _phase = _GamePhase.intro;
+  _GamePhase _phase = _GamePhase.boosterSelect;
   Timer? _timer;
   double _timeLeft = 0;
   DateTime? _answerStartTime;
+
+  // Booster system
+  ActiveBoosters _activeBoosters = const ActiveBoosters();
+  bool _secondChanceUsed = false;
+  bool _streakShieldUsedByBooster = false;
+  bool _hintUsed = false;
+  bool _showBoosterActivation = false;
+  BoosterType? _activatingBoosterType;
+  final Set<int> _eliminatedAnswers = {};
 
   // Animation Controllers
   late AnimationController _countdownController;
@@ -163,7 +178,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       CurvedAnimation(parent: _shiftController, curve: Curves.easeOutQuad),
     );
 
-    _startRound();
+    // Start with booster selection phase
+    // (stays on boosterSelect phase until user picks or skips)
   }
 
   @override
@@ -210,6 +226,7 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       _countdownValue = 3;
       _isSpawning = false;
       _isWorldShifting = false;
+      _eliminatedAnswers.clear();
     });
 
     _runIntroSequence();
@@ -241,9 +258,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
     final assistance = _consecutiveMisses > 1 ? 0.75 : 0.0;
     // Chrono Shard Relic perk: +1.0s observation time if player level >= 2
     final chronoShardBonus = player.level >= 2 ? 1.0 : 0.0;
+    // ── Booster: Time Freeze adds +3.0s observation time ──
+    final timeFreezeBonus = _activeBoosters.hasTimeFreeze ? 3.0 : 0.0;
     _timeLeft = player.isCalmMode
-        ? (_challenge!.observeTime + 3.5 + chronoShardBonus)
-        : (_challenge!.observeTime + assistance + chronoShardBonus);
+        ? (_challenge!.observeTime + 3.5 + chronoShardBonus + timeFreezeBonus)
+        : (_challenge!.observeTime + assistance + chronoShardBonus + timeFreezeBonus);
 
     // Timer for observation
     _timer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
@@ -337,6 +356,12 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       _score += 100 + (_combo * 15);
       _consecutiveMisses = 0;
 
+      // ── Booster: Score Multiplier doubles gems ──
+      if (_activeBoosters.hasScoreMultiplier) {
+        ref.read(gameStateProvider.notifier).addGems(result.gemsEarned);
+        _totalGems += result.gemsEarned; // extra gems on top
+      }
+
       final player = ref.read(gameStateProvider);
       // Singularity Bell Relic: harmonic chime on correct shift (level >= 4)
       if (player.level >= 4) {
@@ -365,8 +390,19 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       // Always show green edge glow on correct
       setState(() => _showCorrectGlow = true);
 
+      // Trigger 2.5D flying reward gems arcing from answer position to HUD
+      final screenSize = MediaQuery.of(context).size;
+      final startPos = Offset(screenSize.width * 0.5, screenSize.height * 0.72);
+      final targetPos = Offset(screenSize.width * 0.82, 45.0);
+      FlyingRewardOverlay.show(
+        context: context,
+        startPosition: startPos,
+        targetPosition: targetPos,
+        count: result.isPerfect ? 12 : 7,
+      );
+
       if (_combo > 1) {
-        AudioService().playCombo();
+        AudioService().playAscendingCombo(_combo);
       }
       // Show combo popup for combos >= 2, confetti for >= 3
       if (_combo >= 3) {
@@ -417,8 +453,73 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       });
     } else {
       final player = ref.read(gameStateProvider);
-      final hasShield = !_hasUsedNebulaShield && player.currentStreak >= 3;
-      if (hasShield) {
+
+      // ── Booster: Second Chance — retry the wrong answer once ──
+      if (_activeBoosters.hasSecondChance && !_secondChanceUsed) {
+        _secondChanceUsed = true;
+        setState(() {
+          _selectedAnswer = null;
+          _lastAnswerCorrect = null;
+          _showBoosterActivation = true;
+          _activatingBoosterType = BoosterType.secondChance;
+        });
+        triggerHaptic(ref, HapticService.mediumTap);
+        AudioService().playPowerUp();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Text('🔄', style: TextStyle(fontSize: 18)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Shift Retry activated! Try again!',
+                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF1E2640),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        Future.delayed(const Duration(milliseconds: 600), () {
+          if (mounted) setState(() => _showBoosterActivation = false);
+        });
+        // Re-show answer phase with timer reset
+        _showAnswerPhase();
+        return;
+      }
+
+      // ── Booster: Streak Shield — protect combo on one mistake ──
+      final hasBoosterShield = _activeBoosters.hasStreakShield && !_streakShieldUsedByBooster;
+      final hasNebulaShield = !_hasUsedNebulaShield && player.currentStreak >= 3;
+
+      if (hasBoosterShield) {
+        _streakShieldUsedByBooster = true;
+        triggerHaptic(ref, HapticService.mediumTap);
+        AudioService().playPowerUp();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Text('🛡', style: TextStyle(fontSize: 18)),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Nebula Shield Booster protected your streak!',
+                    style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF1E2640),
+              duration: const Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else if (hasNebulaShield) {
         _hasUsedNebulaShield = true;
         triggerHaptic(ref, HapticService.mediumTap);
         AudioService().playPowerUp();
@@ -473,6 +574,30 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
     _onAnswerSelected(-1); // Treat timeout as wrong
   }
 
+  void _applyRevealHint() {
+    if (!_activeBoosters.hasRevealHint || _hintUsed || _challenge == null || _phase != _GamePhase.answer) return;
+    final wrongIndices = <int>[];
+    for (int i = 0; i < _challenge!.answers.length; i++) {
+      if (i != _challenge!.correctAnswerIndex) {
+        wrongIndices.add(i);
+      }
+    }
+    if (wrongIndices.isEmpty) return;
+    wrongIndices.shuffle();
+    final toEliminate = wrongIndices.take(min(2, wrongIndices.length - 1)).toSet();
+    setState(() {
+      _hintUsed = true;
+      _eliminatedAnswers.addAll(toEliminate);
+      _showBoosterActivation = true;
+      _activatingBoosterType = BoosterType.revealHint;
+    });
+    triggerHaptic(ref, HapticService.mediumTap);
+    AudioService().playPowerUp();
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) setState(() => _showBoosterActivation = false);
+    });
+  }
+
   void _checkAchievement(Achievement achievement, bool Function() condition) async {
     if (!condition() || _activeAchievement != null) return;
     try {
@@ -513,6 +638,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       if (stars > 0) {
         ref.read(gameStateProvider.notifier).completeWorldLevel(widget.targetLevel!, stars);
       }
+    }
+
+    final player = ref.read(gameStateProvider);
+    if (!player.isCalmMode && _correctCount < 3) {
+      ref.read(gameStateProvider.notifier).consumeLife();
     }
 
     context.pushReplacement('/result', extra: {
@@ -564,12 +694,22 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
             child: StarField(starCount: 30),
           ),
 
-          SafeArea(
-            child: Column(
-              children: [
-                _buildTopBar(),
-                Expanded(child: _buildMainContent()),
-              ],
+          StardustFingerTrail(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  _buildTopBar(),
+                  if (_activeBoosters.selected.isNotEmpty && _phase != _GamePhase.boosterSelect)
+                    ActiveBoosterHud(
+                      activeBoosters: _activeBoosters,
+                      secondChanceUsed: _secondChanceUsed,
+                      streakShieldUsed: _streakShieldUsedByBooster,
+                      hintUsed: _hintUsed,
+                      onHintTap: _applyRevealHint,
+                    ),
+                  Expanded(child: _buildMainContent()),
+                ],
+              ),
             ),
           ),
 
@@ -719,6 +859,22 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
               onComplete: () {
                 if (mounted) setState(() => _activeAchievement = null);
               },
+            ),
+
+          // Booster activation effect popup
+          if (_showBoosterActivation && _activatingBoosterType != null)
+            Positioned(
+              top: MediaQuery.of(context).size.height * 0.25,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: BoosterActivationEffect(
+                  booster: Booster.fromType(_activatingBoosterType!),
+                  onComplete: () {
+                    if (mounted) setState(() => _showBoosterActivation = false);
+                  },
+                ),
+              ),
             ),
         ],
       ),
@@ -921,6 +1077,8 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
 
   Widget _buildMainContent() {
     switch (_phase) {
+      case _GamePhase.boosterSelect:
+        return _buildBoosterSelectPhase();
       case _GamePhase.intro:
         return _buildIntroPhase();
       case _GamePhase.countdown:
@@ -932,6 +1090,25 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
       case _GamePhase.answer:
         return _buildAnswerPhase();
     }
+  }
+
+  Widget _buildBoosterSelectPhase() {
+    return Center(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: BoosterSelector(
+          onConfirm: (boosters) {
+            setState(() {
+              _activeBoosters = boosters;
+            });
+            _startRound();
+          },
+          onSkip: () {
+            _startRound();
+          },
+        ),
+      ),
+    );
   }
 
   Widget _buildIntroPhase() {
@@ -1097,9 +1274,11 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                 ),
               );
             },
-            child: ArenaSurface(
-              enableBreathing: !showModified,
-              child: _buildArenaScene(scene),
+            child: Parallax3dArena(
+              child: ArenaSurface(
+                enableBreathing: !showModified,
+                child: _buildArenaScene(scene),
+              ),
             ),
           ),
         ),
@@ -1267,16 +1446,23 @@ class _PlayScreenState extends ConsumerState<PlayScreen> with TickerProviderStat
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: _challenge!.answers.asMap().entries.map((entry) {
+                      final isEliminated = _eliminatedAnswers.contains(entry.key);
                       return Padding(
                         padding: EdgeInsets.only(bottom: isCompactHeight ? 8 : 12),
-                        child: TactileOptionButton(
-                          index: entry.key,
-                          text: entry.value,
-                          isSelected: _selectedAnswer == entry.key,
-                          isCorrect: entry.key == _challenge!.correctAnswerIndex,
-                          showResult: _selectedAnswer != null,
-                          height: isCompactHeight ? 48 : 54,
-                          onTap: () => _onAnswerSelected(entry.key),
+                        child: Opacity(
+                          opacity: isEliminated ? 0.28 : 1.0,
+                          child: IgnorePointer(
+                            ignoring: isEliminated,
+                            child: TactileOptionButton(
+                              index: entry.key,
+                              text: isEliminated ? '✕ ${entry.value}' : entry.value,
+                              isSelected: _selectedAnswer == entry.key,
+                              isCorrect: entry.key == _challenge!.correctAnswerIndex,
+                              showResult: _selectedAnswer != null,
+                              height: isCompactHeight ? 48 : 54,
+                              onTap: () => _onAnswerSelected(entry.key),
+                            ),
+                          ),
                         ),
                       );
                     }).toList(),
@@ -1336,6 +1522,7 @@ class _WorldShiftWavePainter extends CustomPainter {
 }
 
 enum _GamePhase {
+  boosterSelect,
   intro,
   countdown,
   observe,

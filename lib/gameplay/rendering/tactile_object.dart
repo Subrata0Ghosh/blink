@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../challenge_engine/game_objects.dart';
 import '../../services/haptic_service.dart';
+import '../../services/audio_service.dart';
 import 'gem_2d5_painter.dart';
 import 'star_2d5_painter.dart';
 import 'moon_2d5_painter.dart';
@@ -146,6 +147,7 @@ class _TactileObjectState extends ConsumerState<TactileObject>
     });
     _tapController.forward(from: 0.0);
     triggerHaptic(ref, HapticService.lightTap);
+    AudioService().playJuicyPop();
     widget.onTap?.call();
   }
 

@@ -206,6 +206,20 @@ class AudioService {
   Future<void> playWrong() async => _playSfx('wrong');
   Future<void> playPerfect() async => _playSfx('perfect');
   Future<void> playCombo() async => _playSfx('combo');
+
+  /// Ascending pentatonic dopamine combo sound (Candy Crush / Peggle style)
+  /// Raises pitch progressively as the player builds up their streak!
+  Future<void> playAscendingCombo(int streak) async {
+    final rate = (1.0 + (streak.clamp(1, 8) - 1) * 0.075).clamp(1.0, 1.55);
+    return _playSfx('combo', playbackRate: rate);
+  }
+
+  /// Juicy physical bubble pop on finger touch with randomized micro-pitch
+  Future<void> playJuicyPop() async {
+    final variance = 0.92 + (DateTime.now().microsecond % 25) * 0.012;
+    return _playSfx('ui_click', playbackRate: variance);
+  }
+
   Future<void> playGemPickup() async => _playSfx('gem_pickup');
   Future<void> playLevelUp() async => _playSfx('level_up');
   Future<void> playPowerUp() async => _playSfx('level_up');
@@ -214,7 +228,7 @@ class AudioService {
   Future<void> playTransitionWhoosh() async => _playSfx('ui_confirm');
   Future<void> playResultStinger() async => _playSfx('level_up');
 
-  Future<void> _playSfx(String name) async {
+  Future<void> _playSfx(String name, {double playbackRate = 1.0}) async {
     if (!_soundEnabled || !_sfxEnabled || _sfxVolume <= 0) return;
     try {
       if (_sfxPlayers.isEmpty) await init();
@@ -224,6 +238,11 @@ class AudioService {
       _sfxIndex = (_sfxIndex + 1) % _sfxPlayers.length;
 
       await player.stop();
+      if (playbackRate != 1.0) {
+        await player.setPlaybackRate(playbackRate);
+      } else {
+        await player.setPlaybackRate(1.0);
+      }
       await player.setVolume(_sfxVolume);
       await player.play(AssetSource('audio/$name.wav'));
     } catch (_) {}

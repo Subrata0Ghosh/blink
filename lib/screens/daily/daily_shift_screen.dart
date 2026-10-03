@@ -16,6 +16,9 @@ import '../../services/audio_service.dart';
 import '../../widgets/buttons/tactile_button.dart';
 import '../../widgets/buttons/tactile_option_button.dart';
 import '../../widgets/particles/particles.dart';
+import '../../widgets/particles/stardust_finger_trail.dart';
+import '../../gameplay/rendering/parallax_3d_arena.dart';
+import '../../widgets/animations/flying_reward_overlay.dart';
 
 /// Daily Shift Mode — Section 39
 /// Special daily portal opening presentation with double rewards and streak progression.
@@ -114,7 +117,7 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
     });
 
     if (correct) {
-      AudioService().playCorrect();
+      AudioService().playAscendingCombo(3);
       triggerHaptic(ref, HapticService.perfectAnswer);
       ref.read(gameStateProvider.notifier).updateStreak();
       ref.read(gameStateProvider.notifier).completeDailyShift();
@@ -125,7 +128,18 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
         challengeType: 'daily_shift',
       );
 
-      _victoryTimer = Timer(const Duration(milliseconds: 800), () {
+      // Flying reward gems to HUD
+      final screenSize = MediaQuery.of(context).size;
+      FlyingRewardOverlay.show(
+        context: context,
+        startPosition: Offset(screenSize.width * 0.5, screenSize.height * 0.72),
+        targetPosition: Offset(screenSize.width * 0.82, 45.0),
+        count: 14,
+        emoji: '⭐',
+        color: AppColors.gold,
+      );
+
+      _victoryTimer = Timer(const Duration(milliseconds: 900), () {
         if (mounted) {
           AudioService().playChestOpen();
           setState(() => _showVictory = true);
@@ -225,9 +239,10 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
 
           // Challenge Content after portal traversal
           if (_portalComplete && !_showVictory)
-            SafeArea(
-              child: Column(
-                children: [
+            StardustFingerTrail(
+              child: SafeArea(
+                child: Column(
+                  children: [
                   // Top Bar
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -301,15 +316,16 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
                     ),
                   ),
 
-                  // Arena Scene
+                  // Arena Scene with 2.5D perspective tilt
                   Expanded(
-                    child: ArenaSurface(
-                      enableBreathing: _isObserving,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final scene = _isObserving
-                              ? _challenge!.originalScene
-                              : (_challenge!.modifiedScene ?? _challenge!.originalScene);
+                    child: Parallax3dArena(
+                      child: ArenaSurface(
+                        enableBreathing: _isObserving,
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final scene = _isObserving
+                                ? _challenge!.originalScene
+                                : (_challenge!.modifiedScene ?? _challenge!.originalScene);
 
                           return Stack(
                             children: scene.asMap().entries.map((entry) {
@@ -335,35 +351,65 @@ class _DailyShiftScreenState extends ConsumerState<DailyShiftScreen>
                       ),
                     ),
                   ),
+                ),
 
                   // Answer Buttons (visible when observation finishes)
                   if (!_isObserving)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                       child: Column(
-                        children: _challenge!.answers.asMap().entries.map((entry) {
-                          final isSelected = _selectedAnswer == entry.key;
-                          final isCorrect = entry.key == _challenge!.correctAnswerIndex;
-                          final showRes = _selectedAnswer != null;
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: TactileOptionButton(
-                              index: entry.key,
-                              text: entry.value,
-                              isSelected: isSelected,
-                              isCorrect: isCorrect,
-                              showResult: showRes,
-                              height: 52,
-                              onTap: () => _selectAnswer(entry.key),
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface.withValues(alpha: 0.85),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.cyan.withValues(alpha: 0.4), width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.cyan.withValues(alpha: 0.15),
+                                  blurRadius: 16,
+                                ),
+                              ],
                             ),
-                          );
-                        }).toList(),
+                            child: Text(
+                              _challenge!.question,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ..._challenge!.answers.asMap().entries.map((entry) {
+                            final isSelected = _selectedAnswer == entry.key;
+                            final isCorrect = entry.key == _challenge!.correctAnswerIndex;
+                            final showRes = _selectedAnswer != null;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: TactileOptionButton(
+                                index: entry.key,
+                                text: entry.value,
+                                isSelected: isSelected,
+                                isCorrect: isCorrect,
+                                showResult: showRes,
+                                height: 52,
+                                onTap: () => _selectAnswer(entry.key),
+                              ),
+                            );
+                          }),
+                        ],
                       ),
                     ),
                 ],
               ),
             ),
+          ),
 
           // Victory Reward Celebration Modal
           if (_showVictory)
