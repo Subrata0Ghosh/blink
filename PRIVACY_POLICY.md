@@ -63,5 +63,5 @@ We may update our Privacy Policy periodically. Any updates will be reflected on 
 ### 7. Contact Us
 
 If you have any questions or suggestions regarding this Privacy Policy, please contact us:
-- **Email:** support@blinkgame.io (or your support email)
+- **Email:** technorchid.dev@gmail.com
 - **Website:** https://github.com/Subrata0Ghosh/blink
